@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EXRE 社区 - 授权登录</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); width: 380px; padding: 32px; }
+  h1 { font-size: 20px; text-align: center; margin-bottom: 6px; }
+  .sub { text-align: center; color: #888; font-size: 13px; margin-bottom: 22px; }
+  .app-box { background: #f6f8fa; border-radius: 6px; padding: 14px; margin-bottom: 18px; }
+  .app-name { font-weight: 600; font-size: 15px; }
+  .app-type { color: #888; font-size: 12px; margin-top: 2px; }
+  .scopes { margin: 12px 0 20px; }
+  .scope-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 8px; font-size: 13px; color: #444; }
+  .scope-item::before { content: "🔑"; font-size: 12px; }
+  label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+  input { width: 100%; padding: 9px 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; margin-bottom: 14px; outline: none; }
+  input:focus { border-color: #1677ff; }
+  button { width: 100%; padding: 10px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+  .primary { background: #1677ff; color: #fff; }
+  .ghost { background: #fff; color: #666; border: 1px solid #d9d9d9; margin-top: 10px; }
+  .msg { font-size: 13px; color: #e54545; text-align: center; min-height: 18px; margin-bottom: 8px; }
+  .ok-note { text-align: center; color: #52c41a; font-size: 14px; padding: 20px 0; }
+  .muted { color: #999; font-size: 12px; text-align: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>EXRE 社区</h1>
+  <div class="sub">统一身份授权</div>
+
+  <!-- 第一步: 登录 -->
+  <div id="step-login">
+    <label>邮箱</label>
+    <input id="email" type="email" placeholder="you@example.com" autocomplete="username">
+    <label>密码</label>
+    <input id="password" type="password" placeholder="密码" autocomplete="current-password">
+    <div class="msg" id="login-msg"></div>
+    <button class="primary" id="btn-login">登录并继续</button>
+  </div>
+
+  <!-- 第二步: 确认授权 -->
+  <div id="step-consent" style="display:none">
+    <div class="app-box">
+      <div class="app-name" id="app-name"></div>
+      <div class="app-type" id="app-type"></div>
+    </div>
+    <div style="font-size:13px;color:#555;margin-bottom:10px">该应用将获得以下权限：</div>
+    <div class="scopes" id="scopes"></div>
+    <div class="msg" id="consent-msg"></div>
+    <button class="primary" id="btn-confirm">同意授权</button>
+    <button class="ghost" id="btn-deny">拒绝</button>
+    <div class="muted">授权后可随时在 EXRE 账号安全中心撤销</div>
+  </div>
+
+  <!-- 完成 -->
+  <div id="step-done" style="display:none">
+    <div class="ok-note">授权成功，正在返回应用…</div>
+  </div>
+  <div id="step-denied" style="display:none">
+    <div class="ok-note">已拒绝授权，可关闭此页面</div>
+  </div>
+</div>
+
+<script>
+// 会话令牌只放 sessionStorage: 授权页不污染管理端 localStorage 登录态
+var TOKEN = sessionStorage.getItem('exre_oauth_token') || '';
+var Q = new URLSearchParams(location.search);
+var CFG = {
+  client_id: Q.get('client_id') || '',
+  redirect_uri: Q.get('redirect_uri') || '',
+  scope: Q.get('scope') || 'user.basic',
+  state: Q.get('state') || '',
+  code_challenge: Q.get('code_challenge') || '',
+  code_challenge_method: Q.get('code_challenge_method') || 'plain'
+};
+function api(method, path, body) {
+  return fetch('/api' + path, {
+    method: method,
+    headers: Object.assign({ 'Content-Type': 'application/json' },
+      TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {}),
+    body: body ? JSON.stringify(body) : undefined
+  }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); });
+}
+function $(id) { return document.getElementById(id); }
+
+function loadConsent() {
+  var q = new URLSearchParams({ client_id: CFG.client_id, redirect_uri: CFG.redirect_uri, scope: CFG.scope });
+  api('GET', '/oauth/authorize-info?' + q.toString()).then(function (r) {
+    if (r.status !== 200) { $('consent-msg').textContent = (r.body && (r.body.msg || r.body.message)) || '应用信息加载失败'; return; }
+    var d = r.body.data;
+    $('app-name').textContent = d.name;
+    $('app-type').textContent = d.type === 'plugin' ? 'FiveM 插件' : '第三方平台';
+    var box = $('scopes'); box.innerHTML = '';
+    d.scope_labels.forEach(function (s) {
+      var el = document.createElement('div'); el.className = 'scope-item'; el.textContent = s;
+      box.appendChild(el);
+    });
+    $('step-login').style.display = 'none';
+    $('step-consent').style.display = 'block';
+  });
+}
+if (TOKEN) { loadConsent(); }
+
+$('btn-login').onclick = function () {
+  $('login-msg').textContent = '';
+  api('POST', '/account/login', { email: $('email').value.trim(), password: $('password').value }).then(function (r) {
+    if (r.status !== 200) { $('login-msg').textContent = (r.body && r.body.msg) || '登录失败'; return; }
+    TOKEN = r.body.data.token;
+    sessionStorage.setItem('exre_oauth_token', TOKEN);
+    loadConsent();
+  });
+};
+$('btn-confirm').onclick = function () {
+  $('consent-msg').textContent = '';
+  api('POST', '/oauth/authorize/confirm', CFG).then(function (r) {
+    if (r.status !== 200) { $('consent-msg').textContent = (r.body && r.body.msg) || '授权失败'; return; }
+    $('step-consent').style.display = 'none';
+    $('step-done').style.display = 'block';
+    sessionStorage.removeItem('exre_oauth_token');
+    setTimeout(function () { location.href = r.body.data.redirect; }, 600);
+  });
+};
+$('btn-deny').onclick = function () {
+  $('step-consent').style.display = 'none';
+  $('step-denied').style.display = 'block';
+};
+$('password').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('btn-login').click(); });
+</script>
+</body>
+</html>
