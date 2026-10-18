@@ -36,6 +36,18 @@
 - 管理端：平台文档 `/api/admin/docs`（仅超管）；空间文档 `/api/server/{sid}/docs`（可见性 public/members/roles，roles 时 owner/admin 恒可见）；各配 `doc-categories` 分类接口。
 - 浏览 `/api/docs`（免登录）：**可选鉴权**——控制器 noNeedLogin 时 CheckLogin 整段跳过、uid 不会注入，已登录身份要在控制器里自行用 `JwtToken::verify(1, $token)` + SessionService 识别（tinywan 的 ACCESS_TOKEN 常量是 private，只能传字面量 1）；不可见文档详情返回 404 不泄露存在性。
 
+## 用户侧网站（user-web 对接）
+
+- `web/user-web/` 是独立仓库（ExWebsite，pnpm monorepo，父仓库 gitignore 不追踪），契约在 `api/openapi.yaml`（Contract-first）；已对接端点：`/api/auth/{login,logout,me}`、`PATCH /api/auth/me`、`POST /api/auth/me/avatar`、`GET /api/avatars/{avatarId}`（复用 `AccountController`），通知 `/api/notifications*`（`app/notify/NotificationController`：keyset 签名游标分页、409 乐观锁、read-all/clear 两段式 + requestId 幂等）、`/api/notification-preferences`（`app/notify/PreferenceController`）、`/api/health`（`app/system/`）——**新功能按 app 目录分区，不与现有模块重复**。
+- 响应保持全站 `{msg, data}` 方言（用户侧页面 `unwrapEnvelope`/`adaptUser` 自行适配，不用契约的 ErrorEnvelope 信封）；会话失效=401、封禁登录=403、凭据错误=400、乐观锁冲突=409，页面按 HTTP 状态码判断。
+- **通知端点输出字段名直接采用契约 camelCase**（receiptId/summaryText/stateRevision/...），页面只解信封免字段映射；通知表 `app_notifications`（uuid 回执=契约 receiptId）、偏好表 `app_notification_prefs`（016/017）。
+- 签名游标/短令牌（cursor/readThroughToken/clearSnapshotToken）：`payload.sig` base64url 格式，HMAC-SHA256 密钥复用 JWT `access_secret_key`，绑定 uid+用途+过期。
+- 用户字段名差异：后端 `username/avatar`，契约侧 `nickname/avatarUrl`——映射在 user-web 页面层做（`useSettingsController.adaptUser`）。
+- 头像存 `runtime/avatars/{43位不透明id}.webp`（GD 转 WebP），URL 写入 `app_users.avatar`；`fivemId` 不允许接口直填（游戏身份走绑定流程）。
+- 未实现契约端点（invitations/SSO/notifications 之外的 support/storage）：user-web 页面按 404 静默降级；新实现时继续挂 `/api` 下并按 app 目录分区。
+- user-web 的 vite dev 代理 `/api` → `127.0.0.1:8787`（webman），联调时 `php windows.php` 起后端即可。
+- 坑：webman 未引导 Illuminate facades（`Illuminate\Support\Facades\DB` 会 "facade root has not been set"），查询构造器原生表达式用 `Illuminate\Database\Capsule\Manager as DB`。
+
 ## 平台设计蓝图
 
 B2B2C（平台/服务器空间/用户三层）整体设计见 `docs/b2b2c-blueprint.md`：定位是"外部售卖插件的云端配套服务平台"+ **SSO 身份提供方**——不做商店/玩家业务门户，只有平台管理端、空间管理端和最小账号安全中心；核心机制：插件绑定码（自由生成、一插件一码可重置、超管可吊销）、游戏内绑定码（ticket 录入或 SSO 设备码，绑定即入空间）、OAuth2（授权码+PKCE 与设备码两流，client 仅超管注册，用户/空间管理员只有撤销权）、多设备会话记录与撤销（JWT 带 sid + Redis 会话校验）；**不做历史数据兼容**；QQBot/TxAdmin 自营私有不暴露。涉及空间、成员、插件、绑定码、SSO、会话、文档等新业务时先读它。

@@ -55,6 +55,26 @@ Route::group('/api', function () {
   // 头像读取（公开, 文件在 runtime/avatars/{43位id}.webp）
   Route::get('/avatars/{avatarId}', [app\account\AccountController::class, 'avatar_image']);
 
+  // ==================== 健康检查（system, 公开） ====================
+  Route::get('/health', [app\system\HealthController::class, 'index']);
+
+  // ==================== 站内通知（用户侧网站, 登录） ====================
+  // 固定段路由须在 {notificationId} 参数路由之前注册
+  Route::get('/notifications/summary', [app\notify\NotificationController::class, 'summary']);
+  Route::post('/notifications/read-all', [app\notify\NotificationController::class, 'read_all']);
+  Route::post('/notifications/clear-preview', [app\notify\NotificationController::class, 'clear_preview']);
+  Route::post('/notifications/clear-all', [app\notify\NotificationController::class, 'clear_all']);
+  // 通知列表（keyset 分页）
+  Route::get('/notifications', [app\notify\NotificationController::class, 'index']);
+  // 通知详情
+  Route::get('/notifications/{notificationId}', [app\notify\NotificationController::class, 'detail']);
+  // 单条已读/未读（乐观锁 409）
+  Route::patch('/notifications/{notificationId}/state', [app\notify\NotificationController::class, 'state']);
+
+  // ==================== 通知偏好（用户侧网站, 登录） ====================
+  Route::get('/notification-preferences', [app\notify\PreferenceController::class, 'index']);
+  Route::put('/notification-preferences', [app\notify\PreferenceController::class, 'update']);
+
   // ==================== 平台管理端（P1） ====================
   Route::group('/admin', function () {
     // 概览

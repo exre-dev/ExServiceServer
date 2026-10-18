@@ -4,6 +4,8 @@
 -- 幂等: 重复执行先 DROP 再 CREATE (测试阶段, 不保数据)
 -- ============================================================
 
+DROP TABLE IF EXISTS app_notification_prefs CASCADE;
+DROP TABLE IF EXISTS app_notifications CASCADE;
 DROP TABLE IF EXISTS app_user_tags CASCADE;
 DROP TABLE IF EXISTS app_tags CASCADE;
 DROP TABLE IF EXISTS app_audit_logs CASCADE;
@@ -525,3 +527,65 @@ COMMENT ON COLUMN app_audit_logs.target_id IS '目标id';
 COMMENT ON COLUMN app_audit_logs.detail IS '详情JSON';
 COMMENT ON COLUMN app_audit_logs.ip IS '来源IP';
 COMMENT ON COLUMN app_audit_logs.created_time IS '记录时间';
+
+-- ------------------------------------------------------------
+-- 016 站内通知表（用户侧网站, 每行=一条个人回执）
+-- ------------------------------------------------------------
+CREATE TABLE app_notifications (
+  id             SERIAL PRIMARY KEY,
+  uuid           CHAR(36)    NOT NULL,
+  user_id        INTEGER     NOT NULL,
+  scope          VARCHAR(20) NOT NULL DEFAULT 'personal',
+  category       VARCHAR(30) NOT NULL DEFAULT 'announcement',
+  necessity      VARCHAR(10) NOT NULL DEFAULT 'optional',
+  title          VARCHAR(240) NOT NULL,
+  summary_text   VARCHAR(320) NOT NULL DEFAULT '',
+  body_html      TEXT         DEFAULT NULL,
+  body_text      TEXT         DEFAULT NULL,
+  actions        JSONB        DEFAULT NULL,
+  expires_time   VARCHAR(50)  DEFAULT NULL,
+  read_at        BIGINT       DEFAULT NULL,
+  cleared_at     BIGINT       DEFAULT NULL,
+  state_revision INTEGER      NOT NULL DEFAULT 0,
+  clear_revision INTEGER      NOT NULL DEFAULT 0,
+  created_time   VARCHAR(50)  DEFAULT NULL,
+  updated_time   VARCHAR(50)  DEFAULT NULL
+);
+CREATE UNIQUE INDEX uq_notification_uuid ON app_notifications (uuid);
+CREATE INDEX idx_notification_user ON app_notifications (user_id, id);
+COMMENT ON TABLE app_notifications IS '站内通知表: 每行是一条个人回执(receipt), uuid 即契约 receiptId';
+COMMENT ON COLUMN app_notifications.id IS '主键, 兼作个人投递序号 sequence(新->旧翻页)';
+COMMENT ON COLUMN app_notifications.uuid IS '回执UUID(v4), 对外 receiptId';
+COMMENT ON COLUMN app_notifications.user_id IS '归属用户id';
+COMMENT ON COLUMN app_notifications.scope IS '范围: community=社区广播 personal=个人';
+COMMENT ON COLUMN app_notifications.category IS '类别: announcement/personal_update/service_notice';
+COMMENT ON COLUMN app_notifications.necessity IS '必要性: optional=可关闭投影 necessary=必要(偏好不可关)';
+COMMENT ON COLUMN app_notifications.title IS '标题';
+COMMENT ON COLUMN app_notifications.summary_text IS '列表摘要纯文本';
+COMMENT ON COLUMN app_notifications.body_html IS '正文安全HTML(录入端约束, 无脚本/事件/样式)';
+COMMENT ON COLUMN app_notifications.body_text IS '正文纯文本回退';
+COMMENT ON COLUMN app_notifications.actions IS '动作数组JSON [{actionId,kind,label,emphasis,enabled,unavailableReason,navigationTarget}]';
+COMMENT ON COLUMN app_notifications.expires_time IS '过期时间,空=不过期(过期后不入未读)';
+COMMENT ON COLUMN app_notifications.read_at IS '已读时间戳(unix秒),空=未读';
+COMMENT ON COLUMN app_notifications.cleared_at IS '清理时间戳(unix秒),不可恢复';
+COMMENT ON COLUMN app_notifications.state_revision IS '读状态修订号,乐观锁用';
+COMMENT ON COLUMN app_notifications.clear_revision IS '清理修订号';
+COMMENT ON COLUMN app_notifications.created_time IS '创建时间';
+COMMENT ON COLUMN app_notifications.updated_time IS '更新时间';
+
+-- ------------------------------------------------------------
+-- 017 通知偏好表
+-- ------------------------------------------------------------
+CREATE TABLE app_notification_prefs (
+  user_id        INTEGER PRIMARY KEY,
+  announcement   BOOLEAN     NOT NULL DEFAULT TRUE,
+  personal_update BOOLEAN    NOT NULL DEFAULT TRUE,
+  revision       INTEGER     NOT NULL DEFAULT 0,
+  updated_time   VARCHAR(50) DEFAULT NULL
+);
+COMMENT ON TABLE app_notification_prefs IS '通知偏好表: optional 类别开关(整体替换+乐观锁)';
+COMMENT ON COLUMN app_notification_prefs.user_id IS '用户id(主键)';
+COMMENT ON COLUMN app_notification_prefs.announcement IS 'announcement 类别投影开关';
+COMMENT ON COLUMN app_notification_prefs.personal_update IS 'personal_update 类别投影开关';
+COMMENT ON COLUMN app_notification_prefs.revision IS '偏好修订号,乐观锁用';
+COMMENT ON COLUMN app_notification_prefs.updated_time IS '更新时间';
