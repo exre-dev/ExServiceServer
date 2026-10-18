@@ -38,6 +38,23 @@ Route::group('/api', function () {
     Route::post('/password', [app\account\AccountController::class, 'password']);
   });
 
+  // ==================== 用户侧网站对接（user-web, ExWebsite Contract） ====================
+  // 契约路径 /auth/*（openapi.yaml）复用 account 控制器实现, 响应遵循全站 success/fail 方言
+  Route::group('/auth', function () {
+    // 登录
+    Route::post('/login', [app\account\AccountController::class, 'login']);
+    // 登出（撤销当前会话）
+    Route::post('/logout', [app\account\AccountController::class, 'logout']);
+    // 当前登录用户信息
+    Route::get('/me', [app\account\AccountController::class, 'me']);
+    // 更新当前用户资料（昵称/QQ/清除头像）
+    Route::patch('/me', [app\account\AccountController::class, 'profile_update']);
+    // 上传头像（base64, 统一转 WebP）
+    Route::post('/me/avatar', [app\account\AccountController::class, 'avatar_upload']);
+  });
+  // 头像读取（公开, 文件在 runtime/avatars/{43位id}.webp）
+  Route::get('/avatars/{avatarId}', [app\account\AccountController::class, 'avatar_image']);
+
   // ==================== 平台管理端（P1） ====================
   Route::group('/admin', function () {
     // 概览

@@ -26,7 +26,7 @@ class AccountController
    * 不需要登录验证的方法
    * @var string[]
    */
-  protected $noNeedLogin = ['login', 'register', 'send_email_code'];
+  protected $noNeedLogin = ['login', 'register', 'send_email_code', 'avatar_image'];
 
   /**
    * 注册（bcrypt 密码, 注册即登录）
@@ -164,7 +164,8 @@ class AccountController
       throw new ApiException("邮箱或密码错误");
     }
     if ((int) $user->ban !== 0) {
-      throw new ApiException("当前账户已经被禁用");
+      // 403: 身份有效但被拒（封禁），与管理端拦截器及用户侧错误映射约定一致
+      throw new ApiException("当前账户已经被禁用", 403);
     }
 
     $user->last_login_time = date('Y-m-d H:i:s');
@@ -217,9 +218,141 @@ class AccountController
   {
     $user = UserModel::find($request->uid);
     if (!$user) {
-      throw new ApiException("用户不存在");
+      throw new ApiException("用户不存在", 401);
     }
-    return success([
+    return success($this->mePayload($user));
+  }
+
+  /**
+   * 更新当前用户资料（用户侧网站对接, PATCH /api/auth/me）
+   * 支持: nickname(显示名) / qq(可 null 清空) / avatar(null 清除头像恢复默认)
+   * fivemId 不允许在此设置——游戏身份必须走绑定码/SSO 绑定流程
+   */
+  public function profile_update(Request $request): Response
+  {
+    $post = $request->post();
+    if (empty($post)) {
+      throw new ApiException("参数不匹配");
+    }
+    $user = UserModel::find($request->uid);
+    if (!$user) {
+      throw new ApiException("用户不存在", 401);
+    }
+
+    if (array_key_exists('nickname', $post)) {
+      $nickname = trim((string) $post['nickname']);
+      if ($nickname === '' || mb_strlen($nickname) > 32) {
+        throw new ApiException("用户名需为 1-32 个字符");
+      }
+      $user->username = $nickname;
+    }
+
+    if (array_key_exists('qq', $post)) {
+      $qq = $post['qq'] === null ? '' : trim((string) $post['qq']);
+      if ($qq !== '') {
+        if (!ctype_digit($qq) || strlen($qq) > 20) {
+          throw new ApiException("QQ必须是纯数字");
+        }
+        if (UserModel::where('qq', $qq)->where('id', '<>', $user->id)->first()) {
+          throw new ApiException("QQ已被其他账号绑定");
+        }
+        $user->qq = $qq;
+      } else {
+        $user->qq = null;
+      }
+    }
+
+    if (array_key_exists('fivemId', $post) && $post['fivemId'] !== null) {
+      throw new ApiException("游戏身份请通过游戏内绑定流程完成, 无法直接填写");
+    }
+
+    if (array_key_exists('avatar', $post) && $post['avatar'] === null) {
+      $this->deleteAvatarFile((string) $user->avatar);
+      $user->avatar = '/app/user/default-avatar.png';
+    }
+
+    $user->save();
+    AuditService::log((int) $request->uid, 'user', 'user.profile_update', [
+      'target_type' => 'user',
+      'target_id' => $user->id,
+      'detail' => ['fields' => array_keys($post)],
+    ]);
+    return success($this->mePayload($user));
+  }
+
+  /**
+   * 上传头像（用户侧网站对接, base64 图片统一转 WebP 存储）
+   */
+  public function avatar_upload(Request $request): Response
+  {
+    $post = $request->post();
+    if (empty($post) || hasMissingKeys($post, ["imageBase64", "mediaType"])) {
+      throw new ApiException("参数不匹配");
+    }
+    $mediaType = (string) $post['mediaType'];
+    if (!in_array($mediaType, ['image/png', 'image/jpeg', 'image/webp'], true)) {
+      throw new ApiException("仅支持 PNG、JPEG 或 WebP 图片");
+    }
+    $bytes = base64_decode((string) $post['imageBase64'], true);
+    if ($bytes === false || $bytes === '') {
+      throw new ApiException("图片数据无效");
+    }
+    if (strlen($bytes) > 2 * 1024 * 1024) {
+      throw new ApiException("图片不能超过 2MiB", 413);
+    }
+
+    $img = imagecreatefromstring($bytes);
+    if ($img === false) {
+      throw new ApiException("图片解析失败, 请更换图片后重试");
+    }
+
+    $dir = runtime_path() . '/avatars';
+    if (!is_dir($dir)) {
+      mkdir($dir, 0755, true);
+    }
+    $avatarId = self::opaqueId();
+    imagealphablending($img, false);
+    imagesavealpha($img, true);
+    $saved = imagewebp($img, $dir . "/{$avatarId}.webp", 85);
+    imagedestroy($img);
+    if (!$saved) {
+      throw new ApiException("头像保存失败, 请稍后重试");
+    }
+
+    $user = UserModel::find($request->uid);
+    if (!$user) {
+      throw new ApiException("用户不存在", 401);
+    }
+    $this->deleteAvatarFile((string) $user->avatar);
+    $user->avatar = "/api/avatars/{$avatarId}";
+    $user->save();
+
+    AuditService::log((int) $request->uid, 'user', 'user.avatar_upload', [
+      'target_type' => 'user',
+      'target_id' => $user->id,
+    ]);
+    return success($this->mePayload($user), "头像已更新");
+  }
+
+  /**
+   * 读取头像图片（公开, /api/avatars/{avatarId}）
+   */
+  public function avatar_image(Request $request, string $avatarId): Response
+  {
+    $avatarId = (string) $avatarId;
+    $path = runtime_path() . '/avatars/' . $avatarId . '.webp';
+    if (!preg_match('/^[A-Za-z0-9_-]{43}$/', $avatarId) || !is_file($path)) {
+      return fail("头像不存在", 404);
+    }
+    return response((string) file_get_contents($path), 200, ['Content-Type' => 'image/webp']);
+  }
+
+  /**
+   * 用户信息出参（me / 资料更新 / 头像上传共用）
+   */
+  private function mePayload(UserModel $user): array
+  {
+    return [
       'id' => (int) $user->id,
       'email' => $user->email,
       'username' => $user->username,
@@ -227,7 +360,32 @@ class AccountController
       'qq' => $user->qq,
       'platform_role' => $user->platform_role,
       'last_login_time' => $user->last_login_time,
-    ]);
+    ];
+  }
+
+  /**
+   * 清理旧头像文件（仅删除本模块写入的 /api/avatars/{id} 引用, 忽略默认头像等外部路径）
+   */
+  private function deleteAvatarFile(string $avatarUrl): void
+  {
+    if (!str_starts_with($avatarUrl, '/api/avatars/')) {
+      return;
+    }
+    $avatarId = basename($avatarUrl);
+    if (preg_match('/^[A-Za-z0-9_-]{43}$/', $avatarId)) {
+      $path = runtime_path() . '/avatars/' . $avatarId . '.webp';
+      if (is_file($path)) {
+        unlink($path);
+      }
+    }
+  }
+
+  /**
+   * 43 位不透明标识（base64url(32 字节), 用于头像文件名等对外引用）
+   */
+  private static function opaqueId(): string
+  {
+    return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
   }
 
   // ==================== 设备与会话管理（P4） ====================
