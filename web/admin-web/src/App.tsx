@@ -19,6 +19,7 @@ import ServerPerms from './pages/server/Perms';
 import ServerClients from './pages/server/Clients';
 import Security from './pages/Security';
 import Docs from './pages/Docs';
+import Notifications from './pages/Notifications';
 import ServerDocs from './pages/server/Docs';
 
 /** 登录保护 */
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/logs" element={<Logs />} />
           <Route path="/security" element={<Security />} />
           <Route path="/docs" element={<Docs />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/server/:sid" element={<ServerLayout />}>
             <Route index element={<ServerOverview />} />
             <Route path="members" element={<ServerMembers />} />

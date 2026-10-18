@@ -534,6 +534,7 @@ COMMENT ON COLUMN app_audit_logs.created_time IS '记录时间';
 CREATE TABLE app_notifications (
   id             SERIAL PRIMARY KEY,
   uuid           CHAR(36)    NOT NULL,
+  batch_uuid     CHAR(36)    NOT NULL,
   user_id        INTEGER     NOT NULL,
   scope          VARCHAR(20) NOT NULL DEFAULT 'personal',
   category       VARCHAR(30) NOT NULL DEFAULT 'announcement',
@@ -552,10 +553,12 @@ CREATE TABLE app_notifications (
   updated_time   VARCHAR(50)  DEFAULT NULL
 );
 CREATE UNIQUE INDEX uq_notification_uuid ON app_notifications (uuid);
+CREATE INDEX idx_notification_batch ON app_notifications (batch_uuid);
 CREATE INDEX idx_notification_user ON app_notifications (user_id, id);
 COMMENT ON TABLE app_notifications IS '站内通知表: 每行是一条个人回执(receipt), uuid 即契约 receiptId';
 COMMENT ON COLUMN app_notifications.id IS '主键, 兼作个人投递序号 sequence(新->旧翻页)';
 COMMENT ON COLUMN app_notifications.uuid IS '回执UUID(v4), 对外 receiptId';
+COMMENT ON COLUMN app_notifications.batch_uuid IS '发送批次UUID: 一次管理端发送(广播或个人)共用, 撤回/删除按批';
 COMMENT ON COLUMN app_notifications.user_id IS '归属用户id';
 COMMENT ON COLUMN app_notifications.scope IS '范围: community=社区广播 personal=个人';
 COMMENT ON COLUMN app_notifications.category IS '类别: announcement/personal_update/service_notice';

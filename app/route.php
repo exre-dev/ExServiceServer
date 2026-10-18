@@ -131,6 +131,12 @@ Route::group('/api', function () {
     // 审计日志
     Route::get('/logs', [app\admin\LogController::class, 'index']);
 
+    // 站内通知管理（发送/撤回/删除, 按批）
+    Route::get('/notifications', [app\admin\NotificationController::class, 'index']);
+    Route::post('/notifications', [app\admin\NotificationController::class, 'create']);
+    Route::post('/notifications/{batch}/expire', [app\admin\NotificationController::class, 'expire']);
+    Route::delete('/notifications/{batch}', [app\admin\NotificationController::class, 'delete']);
+
     // 平台文档（P5）
     Route::get('/docs', [app\admin\DocController::class, 'index']);
     Route::post('/docs', [app\admin\DocController::class, 'create']);

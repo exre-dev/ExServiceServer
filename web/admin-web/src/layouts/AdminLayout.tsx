@@ -9,6 +9,7 @@ import {
   AppstoreOutlined,
   KeyOutlined,
   ApiOutlined,
+  BellOutlined,
   FileSearchOutlined,
   FileTextOutlined,
   LogoutOutlined,
@@ -74,6 +75,12 @@ export default function AdminLayout() {
               name: '第三方应用',
               icon: <ApiOutlined />,
               routes: [{ path: '/clients', name: '应用列表' }],
+            },
+            {
+              path: '/notifications',
+              name: '站内通知',
+              icon: <BellOutlined />,
+              routes: [{ path: '/notifications', name: '通知管理' }],
             },
             {
               path: '/docs',
