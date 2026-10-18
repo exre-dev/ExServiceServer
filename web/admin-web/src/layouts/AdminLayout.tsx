@@ -10,6 +10,7 @@ import {
   KeyOutlined,
   ApiOutlined,
   BellOutlined,
+  SafetyCertificateOutlined,
   FileSearchOutlined,
   FileTextOutlined,
   LogoutOutlined,
@@ -77,10 +78,22 @@ export default function AdminLayout() {
               routes: [{ path: '/clients', name: '应用列表' }],
             },
             {
+              path: '/sso-requests',
+              name: '设备与SSO',
+              icon: <SafetyCertificateOutlined />,
+              routes: [{ path: '/sso-requests', name: '授权请求' }],
+            },
+            {
               path: '/notifications',
               name: '站内通知',
               icon: <BellOutlined />,
               routes: [{ path: '/notifications', name: '通知管理' }],
+            },
+            {
+              path: '/feedback',
+              name: '反馈工单',
+              icon: 'comment',
+              routes: [{ path: '/feedback', name: '工单列表' }],
             },
             {
               path: '/docs',

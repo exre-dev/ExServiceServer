@@ -20,6 +20,8 @@ import ServerClients from './pages/server/Clients';
 import Security from './pages/Security';
 import Docs from './pages/Docs';
 import Notifications from './pages/Notifications';
+import SsoRequests from './pages/SsoRequests';
+import Feedback from './pages/Feedback';
 import ServerDocs from './pages/server/Docs';
 
 /** 登录保护 */
@@ -58,6 +60,8 @@ export default function App() {
           <Route path="/security" element={<Security />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/sso-requests" element={<SsoRequests />} />
+          <Route path="/feedback" element={<Feedback />} />
           <Route path="/server/:sid" element={<ServerLayout />}>
             <Route index element={<ServerOverview />} />
             <Route path="members" element={<ServerMembers />} />

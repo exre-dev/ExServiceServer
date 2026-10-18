@@ -44,7 +44,10 @@
 - 签名游标/短令牌（cursor/readThroughToken/clearSnapshotToken）：`payload.sig` base64url 格式，HMAC-SHA256 密钥复用 JWT `access_secret_key`，绑定 uid+用途+过期。
 - 用户字段名差异：后端 `username/avatar`，契约侧 `nickname/avatarUrl`——映射在 user-web 页面层做（`useSettingsController.adaptUser`）。
 - 头像存 `runtime/avatars/{43位不透明id}.webp`（GD 转 WebP），URL 写入 `app_users.avatar`；`fivemId` 不允许接口直填（游戏身份走绑定流程）。
-- 未实现契约端点（sso/inspect 三端点、oidc（Hydra 职责）、support/storage）：user-web 页面按 404 静默降级或提示；SSO 接收端涉及 `ssoRequestId` 签发方架构决策（webman OAuth 体系 vs ExWebsite 自有 server），实现前先与用户确认。
+- SSO 接收端（`/api/auth/sso/{inspect,login,confirm}`，`app/oauth/SsoController`）：**ssoRequestId 由 webman OAuth 设备码流签发**——`device/init` 生成 43 位 `sso_request_id`（Redis `device:sso:*` 反查）+ `verification_uri_web`（`config/userweb.php` base_url 拼 user-web 登录页）；user-web 三端点操作同一 device 记录，完成后客户端照旧轮询 `device/token` 拿令牌闭环（不走跳转回调）；管理端 `/api/admin/sso-requests`（KEYS 实时列表 + 撤销；SCAN 引用游标经门面不稳，勿用）。
+- 通用存储（`/api/storage/*`，`app/storage/`，file 介质存 `runtime/uploads/`）：prepare 只回 file 计划（cos 恒 503）、upload 服务端中转（URL 按请求 Host 生成）、files 公开读；StorageKey 校验在 `StorageService`（**Windows 坑：root() 必须 realpath 归一，混合分隔符会让越界前缀比较误判**）。
+- 用户反馈（`/api/support/feedback/*`，`app/support/`）：prepare（submissionKey 客户端生成幂等）→ 附件 PUT（sha256 须与声明一致）→ advance continue 完成；revision 乐观锁 409；表 `app_feedback_submissions`(018)/`app_feedback_attachments`(019)；管理端 `/api/admin/feedback`（列表/详情/处理状态 pending→processing→resolved）。admin-web 对应「设备与SSO」「反馈工单」页。
+- 唯一未实现契约端点：oidc 三端点（Hydra 登录确认，契约上属 user-web 自有 server 职责，webman 不接手）。
 - user-web 的 vite dev 代理 `/api` → `127.0.0.1:8787`（webman），联调时 `php windows.php` 起后端即可。
 - 坑：webman 未引导 Illuminate facades（`Illuminate\Support\Facades\DB` 会 "facade root has not been set"），查询构造器原生表达式用 `Illuminate\Database\Capsule\Manager as DB`。
 
