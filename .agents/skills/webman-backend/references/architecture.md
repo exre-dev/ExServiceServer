@@ -38,13 +38,13 @@
 
 ## 用户侧网站（user-web 对接）
 
-- `web/user-web/` 是独立仓库（ExWebsite，pnpm monorepo，父仓库 gitignore 不追踪），契约在 `api/openapi.yaml`（Contract-first）；已对接端点：`/api/auth/{login,logout,me}`、`PATCH /api/auth/me`、`POST /api/auth/me/avatar`、`GET /api/avatars/{avatarId}`（复用 `AccountController`），通知 `/api/notifications*`（`app/notify/NotificationController`：keyset 签名游标分页、409 乐观锁、read-all/clear 两段式 + requestId 幂等）、`/api/notification-preferences`（`app/notify/PreferenceController`）、`/api/health`（`app/system/`）——**新功能按 app 目录分区，不与现有模块重复**。
+- `web/user-web/` 是独立仓库（ExWebsite，pnpm monorepo，父仓库 gitignore 不追踪），契约在 `api/openapi.yaml`（Contract-first）；已对接端点：`/api/auth/{login,logout,me}`、`PATCH /api/auth/me`、`POST /api/auth/me/avatar`、`GET /api/avatars/{avatarId}`（复用 `AccountController`），邀请注册 `/api/auth/invitations/{check,code,verify,complete}`（`InvitationService`，码/完成令牌全走 Redis、429 带 Retry-After 头），通知 `/api/notifications*`（`app/notify/NotificationController`：keyset 签名游标分页、409 乐观锁、read-all/clear 两段式 + requestId 幂等）、`/api/notification-preferences`（`app/notify/PreferenceController`）、`/api/health`（`app/system/`）——**新功能按 app 目录分区，与现有模块重复的功能并入原模块**。
 - 响应保持全站 `{msg, data}` 方言（用户侧页面 `unwrapEnvelope`/`adaptUser` 自行适配，不用契约的 ErrorEnvelope 信封）；会话失效=401、封禁登录=403、凭据错误=400、乐观锁冲突=409，页面按 HTTP 状态码判断。
 - **通知端点输出字段名直接采用契约 camelCase**（receiptId/summaryText/stateRevision/...），页面只解信封免字段映射；通知表 `app_notifications`（uuid 回执=契约 receiptId）、偏好表 `app_notification_prefs`（016/017）。
 - 签名游标/短令牌（cursor/readThroughToken/clearSnapshotToken）：`payload.sig` base64url 格式，HMAC-SHA256 密钥复用 JWT `access_secret_key`，绑定 uid+用途+过期。
 - 用户字段名差异：后端 `username/avatar`，契约侧 `nickname/avatarUrl`——映射在 user-web 页面层做（`useSettingsController.adaptUser`）。
 - 头像存 `runtime/avatars/{43位不透明id}.webp`（GD 转 WebP），URL 写入 `app_users.avatar`；`fivemId` 不允许接口直填（游戏身份走绑定流程）。
-- 未实现契约端点（invitations/SSO/notifications 之外的 support/storage）：user-web 页面按 404 静默降级；新实现时继续挂 `/api` 下并按 app 目录分区。
+- 未实现契约端点（sso/inspect 三端点、oidc（Hydra 职责）、support/storage）：user-web 页面按 404 静默降级或提示；SSO 接收端涉及 `ssoRequestId` 签发方架构决策（webman OAuth 体系 vs ExWebsite 自有 server），实现前先与用户确认。
 - user-web 的 vite dev 代理 `/api` → `127.0.0.1:8787`（webman），联调时 `php windows.php` 起后端即可。
 - 坑：webman 未引导 Illuminate facades（`Illuminate\Support\Facades\DB` 会 "facade root has not been set"），查询构造器原生表达式用 `Illuminate\Database\Capsule\Manager as DB`。
 

@@ -51,6 +51,11 @@ Route::group('/api', function () {
     Route::patch('/me', [app\account\AccountController::class, 'profile_update']);
     // 上传头像（base64, 统一转 WebP）
     Route::post('/me/avatar', [app\account\AccountController::class, 'avatar_upload']);
+    // 邀请码注册（资格/发码/校验/完成）
+    Route::post('/invitations/check', [app\account\AccountController::class, 'invitation_check']);
+    Route::post('/invitations/code', [app\account\AccountController::class, 'invitation_code']);
+    Route::post('/invitations/verify', [app\account\AccountController::class, 'invitation_verify']);
+    Route::post('/invitations/complete', [app\account\AccountController::class, 'invitation_complete']);
   });
   // 头像读取（公开, 文件在 runtime/avatars/{43位id}.webp）
   Route::get('/avatars/{avatarId}', [app\account\AccountController::class, 'avatar_image']);

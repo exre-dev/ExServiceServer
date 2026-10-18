@@ -9,6 +9,7 @@ use app\common\model\OAuthGrantModel;
 use app\common\model\UserModel;
 use app\common\services\AuditService;
 use app\common\services\Email;
+use app\common\services\InvitationService;
 use app\common\services\OAuthService;
 use app\common\services\SessionService;
 
@@ -26,7 +27,8 @@ class AccountController
    * 不需要登录验证的方法
    * @var string[]
    */
-  protected $noNeedLogin = ['login', 'register', 'send_email_code', 'avatar_image'];
+  protected $noNeedLogin = ['login', 'register', 'send_email_code', 'avatar_image',
+    'invitation_check', 'invitation_code', 'invitation_verify', 'invitation_complete'];
 
   /**
    * 注册（bcrypt 密码, 注册即登录）
@@ -386,6 +388,76 @@ class AccountController
   private static function opaqueId(): string
   {
     return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+  }
+
+  // ==================== 邀请码注册（用户侧网站, /api/auth/invitations/*） ====================
+
+  /**
+   * 资格检查（未注册邮箱即符合邀请条件）
+   */
+  public function invitation_check(Request $request): Response
+  {
+    $email = trim((string) $request->post('email'));
+    return success(InvitationService::check($email));
+  }
+
+  /**
+   * 发送邀请码（6 位, 10 分钟有效, 60 秒冷却）
+   */
+  public function invitation_code(Request $request): Response
+  {
+    $email = trim((string) $request->post('email'));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      throw new ApiException("邮箱格式不正确");
+    }
+    try {
+      $payload = InvitationService::send($email);
+    } catch (ApiException $e) {
+      if ((int) $e->getCode() === 429) {
+        // 页面按 Retry-After 头显示倒计时
+        $remain = max(1, (int) Redis::ttl("invite:cd:{$email}"));
+        return fail($e->getMessage(), 429)->withHeader('Retry-After', (string) $remain);
+      }
+      throw $e;
+    }
+    return success($payload, "如邮箱符合邀请条件, 验证码已发送")->withStatus(202);
+  }
+
+  /**
+   * 校验邀请码, 换一次性完成令牌
+   */
+  public function invitation_verify(Request $request): Response
+  {
+    $post = $request->post();
+    if (empty($post) || hasMissingKeys($post, ["email", "code"])) {
+      throw new ApiException("参数不匹配");
+    }
+    try {
+      $payload = InvitationService::verify(trim((string) $post['email']), (string) $post['code']);
+    } catch (ApiException $e) {
+      if ((int) $e->getCode() === 429) {
+        $remain = max(1, (int) Redis::ttl("invite:fail:" . trim((string) $post['email'])));
+        return fail($e->getMessage(), 429)->withHeader('Retry-After', (string) $remain);
+      }
+      throw $e;
+    }
+    return success($payload);
+  }
+
+  /**
+   * 完成注册（令牌一次性, 建账号不自动登录, 前往登录页）
+   */
+  public function invitation_complete(Request $request): Response
+  {
+    $post = $request->post();
+    if (empty($post) || hasMissingKeys($post, ["completionToken", "nickname", "password"])) {
+      throw new ApiException("参数不匹配");
+    }
+    return success(InvitationService::complete(
+      (string) $post['completionToken'],
+      (string) $post['nickname'],
+      (string) $post['password']
+    ), "注册成功, 请前往登录");
   }
 
   // ==================== 设备与会话管理（P4） ====================
