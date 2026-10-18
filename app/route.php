@@ -56,6 +56,10 @@ Route::group('/api', function () {
     Route::post('/invitations/code', [app\account\AccountController::class, 'invitation_code']);
     Route::post('/invitations/verify', [app\account\AccountController::class, 'invitation_verify']);
     Route::post('/invitations/complete', [app\account\AccountController::class, 'invitation_complete']);
+    // SSO 接收端（ExWebsite 登录 UI 操作 ssoRequestId; confirm 走 CheckLogin）
+    Route::post('/sso/inspect', [app\oauth\SsoController::class, 'inspect']);
+    Route::post('/sso/login', [app\oauth\SsoController::class, 'login']);
+    Route::post('/sso/confirm', [app\oauth\SsoController::class, 'confirm']);
   });
   // 头像读取（公开, 文件在 runtime/avatars/{43位id}.webp）
   Route::get('/avatars/{avatarId}', [app\account\AccountController::class, 'avatar_image']);
@@ -79,6 +83,20 @@ Route::group('/api', function () {
   // ==================== 通知偏好（用户侧网站, 登录） ====================
   Route::get('/notification-preferences', [app\notify\PreferenceController::class, 'index']);
   Route::put('/notification-preferences', [app\notify\PreferenceController::class, 'update']);
+
+  // ==================== 通用内容存储（用户侧, file 介质） ====================
+  Route::post('/storage/uploads/prepare', [app\storage\StorageController::class, 'prepare']);
+  Route::post('/storage/uploads', [app\storage\StorageController::class, 'upload']);
+  Route::post('/storage/uploads/complete', [app\storage\StorageController::class, 'complete']);
+  Route::get('/storage/files', [app\storage\StorageController::class, 'files']);
+
+  // ==================== 用户反馈（用户侧, 登录） ====================
+  Route::get('/support/feedback/options', [app\support\FeedbackController::class, 'options']);
+  Route::post('/support/feedback/submissions', [app\support\FeedbackController::class, 'prepare']);
+  Route::get('/support/feedback/submissions/lookup', [app\support\FeedbackController::class, 'lookup']);
+  Route::get('/support/feedback/submissions/{submissionId}', [app\support\FeedbackController::class, 'detail']);
+  Route::put('/support/feedback/submissions/{submissionId}/attachments/{attachmentId}', [app\support\FeedbackController::class, 'attachment_upload']);
+  Route::post('/support/feedback/submissions/{submissionId}/advance', [app\support\FeedbackController::class, 'advance']);
 
   // ==================== 平台管理端（P1） ====================
   Route::group('/admin', function () {
@@ -136,6 +154,15 @@ Route::group('/api', function () {
     Route::post('/notifications', [app\admin\NotificationController::class, 'create']);
     Route::post('/notifications/{batch}/expire', [app\admin\NotificationController::class, 'expire']);
     Route::delete('/notifications/{batch}', [app\admin\NotificationController::class, 'delete']);
+
+    // 设备/SSO 授权请求管理（实时列表 + 撤销）
+    Route::get('/sso-requests', [app\admin\SsoController::class, 'index']);
+    Route::post('/sso-requests/{deviceCode}/revoke', [app\admin\SsoController::class, 'revoke']);
+
+    // 反馈工单管理
+    Route::get('/feedback', [app\admin\FeedbackController::class, 'index']);
+    Route::get('/feedback/{id}', [app\admin\FeedbackController::class, 'detail']);
+    Route::post('/feedback/{id}/status', [app\admin\FeedbackController::class, 'status']);
 
     // 平台文档（P5）
     Route::get('/docs', [app\admin\DocController::class, 'index']);

@@ -592,3 +592,69 @@ COMMENT ON COLUMN app_notification_prefs.announcement IS 'announcement 类别投
 COMMENT ON COLUMN app_notification_prefs.personal_update IS 'personal_update 类别投影开关';
 COMMENT ON COLUMN app_notification_prefs.revision IS '偏好修订号,乐观锁用';
 COMMENT ON COLUMN app_notification_prefs.updated_time IS '更新时间';
+
+-- ------------------------------------------------------------
+-- 018 反馈工单表
+-- ------------------------------------------------------------
+CREATE TABLE app_feedback_submissions (
+  id                  SERIAL PRIMARY KEY,
+  uuid                CHAR(36)    NOT NULL,
+  submission_key      CHAR(36)    NOT NULL,
+  area                VARCHAR(20) NOT NULL DEFAULT 'development',
+  kind                VARCHAR(20) NOT NULL,
+  user_id             INTEGER     NOT NULL,
+  form                JSONB       NOT NULL,
+  status              VARCHAR(30) NOT NULL DEFAULT 'receiving',
+  admin_status        VARCHAR(20) NOT NULL DEFAULT 'pending',
+  admin_note          TEXT        DEFAULT NULL,
+  revision            INTEGER     NOT NULL DEFAULT 0,
+  receive_expires_at  VARCHAR(50) DEFAULT NULL,
+  created_time        VARCHAR(50) DEFAULT NULL,
+  updated_time        VARCHAR(50) DEFAULT NULL
+);
+CREATE UNIQUE INDEX uq_feedback_uuid ON app_feedback_submissions (uuid);
+CREATE UNIQUE INDEX uq_feedback_key ON app_feedback_submissions (submission_key);
+CREATE INDEX idx_feedback_user ON app_feedback_submissions (user_id, id);
+COMMENT ON TABLE app_feedback_submissions IS '反馈工单表: 用户侧 support/feedback 提交';
+COMMENT ON COLUMN app_feedback_submissions.uuid IS '工单UUID(对外 id)';
+COMMENT ON COLUMN app_feedback_submissions.submission_key IS '客户端生成的恢复键(幂等查找用)';
+COMMENT ON COLUMN app_feedback_submissions.area IS '入口: development/community';
+COMMENT ON COLUMN app_feedback_submissions.kind IS '反馈类型: bug/feature/asset/request/content/campaign/suggestion/complaint';
+COMMENT ON COLUMN app_feedback_submissions.user_id IS '提交用户id';
+COMMENT ON COLUMN app_feedback_submissions.form IS '表单快照JSON(FeedbackForm)';
+COMMENT ON COLUMN app_feedback_submissions.status IS '用户侧状态: receiving(收取中)/completed(已提交)';
+COMMENT ON COLUMN app_feedback_submissions.admin_status IS '管理侧状态: pending/processing/resolved';
+COMMENT ON COLUMN app_feedback_submissions.admin_note IS '管理员备注';
+COMMENT ON COLUMN app_feedback_submissions.revision IS '修订号(乐观锁)';
+COMMENT ON COLUMN app_feedback_submissions.receive_expires_at IS '收取截止时间(超时未完成可作废)';
+
+-- ------------------------------------------------------------
+-- 019 反馈附件表
+-- ------------------------------------------------------------
+CREATE TABLE app_feedback_attachments (
+  id             SERIAL PRIMARY KEY,
+  uuid           CHAR(36)    NOT NULL,
+  submission_id  INTEGER     NOT NULL,
+  ordinal        INTEGER     NOT NULL DEFAULT 0,
+  original_name  VARCHAR(510) NOT NULL,
+  content_type   VARCHAR(127) NOT NULL DEFAULT 'application/octet-stream',
+  byte_length    BIGINT      NOT NULL DEFAULT 0,
+  sha256         CHAR(64)    NOT NULL DEFAULT '',
+  status         VARCHAR(20) NOT NULL DEFAULT 'expected',
+  storage_key    VARCHAR(240) DEFAULT NULL,
+  created_time   VARCHAR(50) DEFAULT NULL,
+  updated_time   VARCHAR(50) DEFAULT NULL,
+  CONSTRAINT fk_feedback_attachment FOREIGN KEY (submission_id) REFERENCES app_feedback_submissions (id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX uq_feedback_attachment_uuid ON app_feedback_attachments (uuid);
+CREATE INDEX idx_feedback_attachment_submission ON app_feedback_attachments (submission_id);
+COMMENT ON TABLE app_feedback_attachments IS '反馈附件表: 声明(expected)后上传(uploaded)';
+COMMENT ON COLUMN app_feedback_attachments.uuid IS '附件UUID(对外 attachmentId)';
+COMMENT ON COLUMN app_feedback_attachments.submission_id IS '所属工单id';
+COMMENT ON COLUMN app_feedback_attachments.ordinal IS '顺序(0-4)';
+COMMENT ON COLUMN app_feedback_attachments.original_name IS '原始文件名';
+COMMENT ON COLUMN app_feedback_attachments.content_type IS '内容类型';
+COMMENT ON COLUMN app_feedback_attachments.byte_length IS '申报/实际上传字节数';
+COMMENT ON COLUMN app_feedback_attachments.sha256 IS '申报/实际 SHA-256';
+COMMENT ON COLUMN app_feedback_attachments.status IS 'expected(已声明未传)/uploaded(已上传)';
+COMMENT ON COLUMN app_feedback_attachments.storage_key IS '落盘键 runtime/uploads/ 下相对路径';

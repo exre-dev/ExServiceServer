@@ -17,6 +17,7 @@ class OAuthService
     public const CODE_PREFIX = 'oauth:code:';      // 授权码
     public const DEVICE_PREFIX = 'device:';        // 设备码状态
     public const DEVICE_UC_PREFIX = 'device:uc:';  // user_code → device_code
+    public const DEVICE_SSO_PREFIX = 'device:sso:'; // sso_request_id → device_code（ExWebsite 登录 UI 用）
 
     public const CODE_TTL = 300;    // 授权码 5 分钟
     public const DEVICE_TTL = 600;  // 设备码 10 分钟
@@ -171,16 +172,21 @@ class OAuthService
             $userCode = random_code(6, true);
         } while (Redis::exists(self::DEVICE_UC_PREFIX . $userCode));
 
+        // ssoRequestId（43 位不透明）: ExWebsite（user-web）登录 UI 的接收端句柄
+        $ssoRequestId = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+
         Redis::setex(self::DEVICE_PREFIX . $deviceCode, self::DEVICE_TTL, json_encode([
             'client_id' => $client->client_id,
             'status' => 'pending',
             'user_code' => $userCode,
+            'sso_request_id' => $ssoRequestId,
             'user_id' => 0,
             'scopes' => $client->scopes,
         ]));
         Redis::setex(self::DEVICE_UC_PREFIX . $userCode, self::DEVICE_TTL, $deviceCode);
+        Redis::setex(self::DEVICE_SSO_PREFIX . $ssoRequestId, self::DEVICE_TTL, $deviceCode);
 
-        return ['device_code' => $deviceCode, 'user_code' => $userCode];
+        return ['device_code' => $deviceCode, 'user_code' => $userCode, 'sso_request_id' => $ssoRequestId];
     }
 
     /**
@@ -198,6 +204,34 @@ class OAuthService
         }
         $data = json_decode($raw, true);
         return is_array($data) ? $data + ['device_code' => $deviceCode] : null;
+    }
+
+    /**
+     * 按 ssoRequestId 找设备请求（ExWebsite /auth/sso/* 三端点用）
+     * @return array{device_code: string, data: array, ttl: int}|null
+     */
+    public static function deviceBySsoRequestId(string $ssoRequestId): ?array
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{43}$/', $ssoRequestId)) {
+            return null;
+        }
+        $deviceCode = Redis::get(self::DEVICE_SSO_PREFIX . $ssoRequestId);
+        if (!$deviceCode) {
+            return null;
+        }
+        $raw = Redis::get(self::DEVICE_PREFIX . $deviceCode);
+        if (!$raw) {
+            return null;
+        }
+        $data = json_decode($raw, true);
+        if (!is_array($data)) {
+            return null;
+        }
+        return [
+            'device_code' => (string) $deviceCode,
+            'data' => $data,
+            'ttl' => (int) Redis::ttl(self::DEVICE_PREFIX . $deviceCode),
+        ];
     }
 
     /**
@@ -237,6 +271,9 @@ class OAuthService
         Redis::del(self::DEVICE_PREFIX . $deviceCode);
         if (isset($data['user_code'])) {
             Redis::del(self::DEVICE_UC_PREFIX . $data['user_code']);
+        }
+        if (isset($data['sso_request_id'])) {
+            Redis::del(self::DEVICE_SSO_PREFIX . $data['sso_request_id']);
         }
         return ['status' => 'ok', 'data' => $data];
     }

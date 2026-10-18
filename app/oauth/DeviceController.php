@@ -49,10 +49,18 @@ class DeviceController
 
     $res = OAuthService::deviceInit($client);
 
+    // ExWebsite 登录 UI 跳转地址（ssoRequestId 接收端）; 未配置时为 null
+    $webBase = rtrim((string) config('userweb.base_url', ''), '/');
+    $verificationWebUrl = $webBase !== ''
+      ? "{$webBase}/login?ssoRequestId={$res['sso_request_id']}"
+      : null;
+
     return success([
       'device_code' => $res['device_code'],
       'user_code' => $res['user_code'],
+      'sso_request_id' => $res['sso_request_id'],
       'verification_url' => '/oauth/device',
+      'verification_uri_web' => $verificationWebUrl,
       'expires_in' => OAuthService::DEVICE_TTL,
       'interval' => 5,
     ]);
