@@ -8,6 +8,7 @@ use app\common\model\OAuthClientModel;
 use app\common\model\OAuthGrantModel;
 use app\common\model\UserModel;
 use app\common\services\AuditService;
+use app\common\services\CaptchaService;
 use app\common\services\Email;
 use app\common\services\InvitationService;
 use app\common\services\OAuthService;
@@ -28,7 +29,7 @@ class AccountController
    * @var string[]
    */
   protected $noNeedLogin = ['login', 'register', 'send_email_code', 'avatar_image',
-    'invitation_check', 'invitation_code', 'invitation_verify', 'invitation_complete'];
+    'invitation_check', 'invitation_code', 'invitation_verify', 'invitation_complete', 'captcha_challenge'];
 
   /**
    * 注册（bcrypt 密码, 注册即登录）
@@ -150,6 +151,7 @@ class AccountController
 
   /**
    * 登录（每次登录创建独立会话, 多设备并存）
+   * 可选图片验证码: 请求带 captcha {challengeId, answer} 时校验（用户侧网站登录流）
    */
   public function login(Request $request): Response
   {
@@ -159,6 +161,10 @@ class AccountController
     if ($email === '' || $password === '') {
       throw new ApiException("邮箱或密码不能为空");
     }
+    // 图片验证码（422 = 验证码错误, 前端与凭据错误 400 区分展示）
+    // 管理端登录（/api/account/login）必填; 用户侧（/api/auth/login）带则校验
+    $captchaRequired = str_starts_with($request->path(), '/api/account/');
+    CaptchaService::checkFromRequest($request->post('captcha'), $captchaRequired);
 
     $user = UserModel::where('email', $email)->first();
     // 统一报错, 不泄露"账号不存在"
@@ -393,6 +399,15 @@ class AccountController
   // ==================== 邀请码注册（用户侧网站, /api/auth/invitations/*） ====================
 
   /**
+   * 图片验证码挑战（登录/注册流共用, 5 分钟一次性）
+   */
+  #[Limit(limit: 10, ttl: 60, message: '请求过于频繁,请稍后再试!')]
+  public function captcha_challenge(Request $request): Response
+  {
+    return success(CaptchaService::create());
+  }
+
+  /**
    * 资格检查（未注册邮箱即符合邀请条件）
    */
   public function invitation_check(Request $request): Response
@@ -424,7 +439,7 @@ class AccountController
   }
 
   /**
-   * 校验邀请码, 换一次性完成令牌
+   * 校验邀请码, 换一次性完成令牌（可带图片验证码防自动注册）
    */
   public function invitation_verify(Request $request): Response
   {
@@ -432,6 +447,7 @@ class AccountController
     if (empty($post) || hasMissingKeys($post, ["email", "code"])) {
       throw new ApiException("参数不匹配");
     }
+    CaptchaService::checkFromRequest($post['captcha'] ?? null);
     try {
       $payload = InvitationService::verify(trim((string) $post['email']), (string) $post['code']);
     } catch (ApiException $e) {

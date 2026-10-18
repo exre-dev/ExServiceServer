@@ -43,6 +43,8 @@ Route::group('/api', function () {
   Route::group('/auth', function () {
     // 登录
     Route::post('/login', [app\account\AccountController::class, 'login']);
+    // 图片验证码挑战（登录/注册流共用, 5 分钟一次性）
+    Route::post('/captcha/challenges', [app\account\AccountController::class, 'captcha_challenge']);
     // 登出（撤销当前会话）
     Route::post('/logout', [app\account\AccountController::class, 'logout']);
     // 当前登录用户信息

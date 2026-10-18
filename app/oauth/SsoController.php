@@ -5,6 +5,7 @@ namespace app\oauth;
 use app\common\exception\ApiException;
 use app\common\model\UserModel;
 use app\common\services\AuditService;
+use app\common\services\CaptchaService;
 use app\common\services\OAuthService;
 use support\Request;
 use support\Response;
@@ -58,6 +59,9 @@ class SsoController
     if (($device['data']['status'] ?? '') !== 'pending') {
       throw new ApiException("该 SSO 请求已完成", 409);
     }
+
+    // 图片验证码（契约 SsoPasswordRequest.captcha, 可选校验）
+    CaptchaService::checkFromRequest($request->post('captcha'));
 
     $email = trim((string) $post['email']);
     $user = UserModel::where('email', $email)->first();
