@@ -2,7 +2,11 @@
 
 namespace app\common\services;
 
+use app\common\services\TxAdmin;
+use app\common\services\HttpClient;
+
 use support\Request;
+use support\Log;
 use support\Redis;
 
 /***
@@ -13,7 +17,7 @@ class QQBot
 {
 
   /** 获取 Token URL */
-  public static $app_access_token_URL = "https://bots.qq.com/app/getAppAccessToken";
+  public static $app_access_token_URL = "https://api.bot.qq.com/app/getAppAccessToken";
   /** 推送消息URL */
   public static $openapi_url = "https://api.sgroup.qq.com";
   public static $group_message_path = "/v2/groups/{group_openid}/messages";
@@ -27,24 +31,60 @@ class QQBot
    */
   protected $noNeedLogin = ['hook'];
 
+  /**
+   * 机器人消息主消息入口
+   * @param Request $request
+   */
   public function hook(Request $request)
   {
-    if (getenv("BOT_ENABLE") == "false") {
-      return json(["code" => 1, "msg" => "Not Enable"]);
-    }
 
     $data = $request->post();
     $header = $request->header();
 
+    // print_r($data);
+
     switch ($data["op"]) {
       // 校验操作
       case "13":
-        $plain_token = $data["d"]["plain_token"];
-        $event_ts = $data["d"]["event_ts"];
-        $private_key = sodium_crypto_sign_seed_keypair(getenv('BOT_SECRET'));
+        $rawBody = $request->rawBody();
+        Log::info('QQBot RawBody:', [$rawBody]); // 先记录原始数据，确认非空
+
+        $data = json_decode($rawBody, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+          Log::error('QQBot JSON Decode Failed: ' . json_last_error_msg());
+          return response('Invalid JSON', 400);
+        }
+
+        // 2. 从解析后的数组中取值
+        $plain_token = $data['d']['plain_token'] ?? null;
+        $event_ts = $data['d']['event_ts'] ?? null;
+
+        if (is_null($plain_token) || is_null($event_ts)) {
+          Log::error('QQBot Missing Keys:', ['data' => $data]);
+          return response('Missing keys', 400);
+        }
+
+        // 3. 生成 seed 并签名 (之前的修正逻辑)
+        $bot_secret = getenv('BOT_SECRET');
+        $seed = $bot_secret;
+        while (strlen($seed) < 32) {
+          $seed .= $seed;
+        }
+        $seed = substr($seed, 0, 32);
+
+        $keypair = sodium_crypto_sign_seed_keypair($seed);
         $msg = $event_ts . $plain_token;
-        $c_signature = sodium_crypto_sign_detached($msg, sodium_crypto_sign_secretkey($private_key));
-        return json(["plain_token" => $plain_token, "signature" => bin2hex($c_signature)]);
+
+        // 4. 在这里用 Log 记录 $msg，而不是 print_r
+        Log::info('QQBot Msg to Sign:', ['msg' => $msg]);
+
+        $signature = sodium_crypto_sign_detached($msg, sodium_crypto_sign_secretkey($keypair));
+
+        // 5. 返回正确格式的 JSON
+        return json([
+          'plain_token' => $plain_token,
+          'signature' => bin2hex($signature),
+        ]);
       case "0":
         $this->message_event($data);
         break;
@@ -56,21 +96,21 @@ class QQBot
   private function message_event($data)
   {
     $type = $data["t"];
+
     /** 用户id */
     $uid = $data["d"]["author"]["union_openid"];
     /** 消息id */
     $mid = $data["d"]["id"];
     /** 接收的消息 */
-    $msg = $data["d"]["content"];
+    $content = $data["d"]["content"];
 
     switch ($type) {
-      // 单聊事件
-      case "C2C_MESSAGE_CREATE":
-        $req = self::postQQ(self::getC2CMessageUrl($uid), [
-          "content" => "你好,当前为测试状态. " . $msg,
-          "msg_type" => 0,
-          "msg_id" => $mid,
-        ]);
+      case "GROUP_MESSAGE_CREATE":
+        /** 群id */
+        $gid = $data["d"]["group_id"];
+
+
+        self::sendGroupMessage($gid, $mid, $content);
         break;
       // 群聊@事件
       case "GROUP_AT_MESSAGE_CREATE":
@@ -103,23 +143,31 @@ class QQBot
   /** 根据白名单code 通过白名单 */
   static function ApprovedWhite($gid, $mid, $code)
   {
-    // 获取服务器待通过白名单（false 表示接口离线或状态异常）
-    $data = TxAdmin::GetWhiteList();
-    if ($data === false) {
+    $req = null;
+    try {
+      // 获取服务器待通过白名单
+      $req = TxAdmin::GetWhiteList();
+      if ($req->status() !== 200) {
+        self::sendGroupMessage($gid, $mid, "接口状态错误 " . $req->status());
+        return;
+      }
+    } catch (\Exception $e) {
       self::sendGroupMessage($gid, $mid, "接口离线,请等待服务器上线后重新发送");
       return;
     }
 
+
     // 将数据格式化
-    $whitelist = $data["requests"] ?? [];
+    $data = $req->array();
+    $whitelist = $data["requests"];
     foreach ($whitelist as $v) {
       if ($code === $v["id"]) {
         TxAdmin::PassWhiteListwithReqID($v['id']);
-        if (self::getGroupType($gid) == "acad") {
-          self::sendGroupMessage($gid, $mid, "$code 白名单通过成功,有效期14天");
-        } else {
-          self::sendGroupMessage($gid, $mid, "$code 白名单通过成功");
-        }
+        // if (self::getGroupType($gid) == "acad") {
+        // self::sendGroupMessage($gid, $mid, "$code 白名单通过成功,有效期14天");
+        // } else {
+        self::sendGroupMessage($gid, $mid, "$code 白名单通过成功");
+        // }
         return;
       }
       // self::sendGroupMessage($gid, $mid, "通过失败,未在官网注册账号,或QQ不匹配");
@@ -138,26 +186,15 @@ class QQBot
 
   }
 
-  /** 获取 QQBot 访问 token（Redis 缓存,无则刷新） */
-  static function getToken()
+  static function HttpReq()
   {
     $token = Redis::get("qqbot_token");
 
     if (!$token) {
       $token = self::GetAppAccessToken();
     }
-    return $token;
-  }
 
-  /** 带 token 调用 QQ 开放平台接口（JSON POST），失败返回 null */
-  static function postQQ(string $url, array $data): ?array
-  {
-    return HttpClient::make()
-      ->post($url)
-      ->json($data)
-      ->header("Authorization", "QQBot " . self::getToken())
-      ->timeout(3)
-      ->sendQuietly();
+    return HttpClient::make()->timeout(3)->header("Authorization", "QQBot " . $token);
   }
 
   static function GetMessageSeq()
@@ -176,17 +213,16 @@ class QQBot
   /** 获取 TOKEN 处理 */
   static function GetAppAccessToken()
   {
-    $url = "https://bots.qq.com/app/getAppAccessToken";
-
     $req = HttpClient::make()
-      ->post($url)
+      ->post(self::$app_access_token_URL)
       ->json([
         "appId" => getenv("BOT_APPID"),
         "clientSecret" => getenv("BOT_SECRET")
       ])
       ->timeout(5)
-      ->sendQuietly();
+      ->send();
 
+    print_r($req);
     $data = $req['json'];
 
     $token = $data["access_token"];
@@ -202,14 +238,16 @@ class QQBot
   /** 发送至对于群消息 */
   static function sendGroupMessage(string $gid, string $mid, string $message)
   {
-    $req = self::postQQ(self::getGroupMessageUrl($gid), [
+
+    $req = self::HttpReq()->post(self::getGroupMessageUrl($gid))->json([
       "content" => $message,
       "msg_type" => 0,
       "msg_id" => $mid,
       "msg_seq" => self::GetMessageSeq(),
-    ]);
+    ])->sendQuietly();
 
-    dump($req["body"] ?? null);
+    print_r($req['json']);
+
   }
 
   /**
@@ -249,10 +287,10 @@ class QQBot
   /**
    * 获取当前消息所属群组
    *
-   * @param string $group_id
+   * @param string $gid
    * @return "dev"
    */
-  static function getGroupType($gd)
+  static function getGroupType($gid)
   {
     // if (in_array($group_id, QQBotService::$bot_main_group)) {
     //   return "main";
