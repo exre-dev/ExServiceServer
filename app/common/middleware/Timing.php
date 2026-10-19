@@ -17,6 +17,10 @@ class Timing implements MiddlewareInterface
      */
     public function process(Request $request, callable $next): Response
     {
+        // 初始化表单含数据库、Redis 和管理员密码，不进入请求参数日志。
+        if ($request->controller === \app\system\InstallationController::class) {
+            return $next($request);
+        }
         // 开始时间
         $start_time = microtime(true);
 

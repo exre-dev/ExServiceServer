@@ -12,6 +12,11 @@ Route::options('[{path:.+}]', function () {
 // ============================================================
 Route::group('/api', function () {
 
+  // 首次部署初始化（免登录，完成后禁止再次安装）
+  Route::get('/installation/status', [app\system\InstallationController::class, 'status']);
+  // 导入数据库并创建首个超级管理员
+  Route::post('/installation/install', [app\system\InstallationController::class, 'install']);
+
   // ==================== 账号安全中心 ====================
   Route::group('/account', function () {
     // 登录

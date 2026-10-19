@@ -15,6 +15,7 @@
 return [
     '' => [
         app\common\middleware\AccessControl::class,
+        app\common\middleware\RequireInstallation::class,
         app\common\middleware\Timing::class,
         app\common\middleware\Limit::class,
         app\common\middleware\CheckLogin::class,

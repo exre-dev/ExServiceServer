@@ -114,6 +114,10 @@ function dispatch(string $method, string $path, array $body = [], ?string $token
         . ($token !== null ? 'Authorization: Bearer ' . $token . "\r\n" : '')
         . 'Content-Length: ' . strlen($raw) . "\r\n\r\n" . $raw);
     Webman\Context::set(Webman\Http\Request::class, $request);
+    // SSO 临时 schema 已包含管理员，向管理端启动检查声明该测试夹具已初始化。
+    if ($method === 'GET' && $path === '/api/installation/status') {
+        return success(['installed' => true]);
+    }
     $routes = [
         'GET /api/health' => [app\system\HealthController::class, 'index'],
         'POST /api/oauth/device/init' => [app\oauth\DeviceController::class, 'init'],

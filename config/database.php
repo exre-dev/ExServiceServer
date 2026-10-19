@@ -25,14 +25,14 @@ return [
                 'heartbeat_interval' => 50,
             ],
         ],
-        // 本地测试 PostgreSQL（docker 容器 webman-pgsql；凭据用 PG_* 而非 DB_*，DB_* 留给 MySQL）
+        // 默认 PostgreSQL（首次部署写入 PG_*；DB_* 预留给 MySQL）
         'pgsql' => [
             'driver' => 'pgsql',
             'host' => getenv('PG_HOST') ?: '127.0.0.1',
             'port' => getenv('PG_PORT') ?: '5432',
             'database' => getenv('PG_DB') ?: 'webman',
             'username' => getenv('PG_USER') ?: 'webman',
-            'password' => getenv('PG_PASSWORD') ?: 'webman123',
+            'password' => getenv('PG_PASSWORD') !== false ? getenv('PG_PASSWORD') : 'webman123',
             'charset' => 'utf8',
             'prefix' => '',
             'schema' => 'public',

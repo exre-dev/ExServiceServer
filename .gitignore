@@ -5,6 +5,9 @@
 /vendor
 *.log
 .env
+/install.lock
+/.install.mutex
+/.install-*
 /tests/tmp
 /tests/.phpunit.result.cache
 # 管理端 UI（随仓库走）

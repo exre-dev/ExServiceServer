@@ -25,6 +25,10 @@ class Limit implements MiddlewareInterface
      */
     public function process(Request $request, callable $next): Response
     {
+        // 初始化必须在 Redis 尚未配置时可访问。
+        if ($request->controller === \app\system\InstallationController::class) {
+            return $next($request);
+        }
         // IP地址
         $ip = $request->getRealIp();
 
