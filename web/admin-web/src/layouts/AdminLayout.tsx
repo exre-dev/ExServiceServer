@@ -10,6 +10,7 @@ import {
   KeyOutlined,
   ApiOutlined,
   BellOutlined,
+  CommentOutlined,
   SafetyCertificateOutlined,
   FileSearchOutlined,
   FileTextOutlined,
@@ -51,67 +52,58 @@ export default function AdminLayout() {
               path: '/servers',
               name: '空间管理',
               icon: <CloudServerOutlined />,
-              routes: [{ path: '/servers', name: '空间列表' }],
             },
             {
               path: '/users',
               name: '用户管理',
               icon: <TeamOutlined />,
-              routes: [{ path: '/users', name: '用户列表' }],
             },
             {
               path: '/plugins',
               name: '插件目录',
               icon: <AppstoreOutlined />,
-              routes: [{ path: '/plugins', name: '插件列表' }],
             },
             {
               path: '/bindings',
               name: '绑定码监管',
               icon: <KeyOutlined />,
-              routes: [{ path: '/bindings', name: '绑定码列表' }],
             },
             {
               path: '/clients',
               name: '第三方应用',
               icon: <ApiOutlined />,
-              routes: [{ path: '/clients', name: '应用列表' }],
             },
             {
               path: '/sso-requests',
               name: '设备与SSO',
               icon: <SafetyCertificateOutlined />,
-              routes: [{ path: '/sso-requests', name: '授权请求' }],
             },
             {
               path: '/notifications',
               name: '站内通知',
               icon: <BellOutlined />,
-              routes: [{ path: '/notifications', name: '通知管理' }],
             },
             {
               path: '/feedback',
               name: '反馈工单',
-              icon: 'comment',
-              routes: [{ path: '/feedback', name: '工单列表' }],
+              icon: <CommentOutlined />,
             },
             {
               path: '/docs',
               name: '文档管理',
               icon: <FileTextOutlined />,
-              routes: [{ path: '/docs', name: '平台文档' }],
             },
             {
               path: '/logs',
               name: '审计日志',
               icon: <FileSearchOutlined />,
-              routes: [{ path: '/logs', name: '日志查询' }],
             },
           ]
         : []),
       ...(servers.length
         ? [
             {
+              key: 'my-servers',
               path: `/server/${servers[0].id}`,
               name: '我的空间',
               icon: <CloudServerOutlined />,

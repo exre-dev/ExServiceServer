@@ -163,14 +163,14 @@ class OAuthService
 
     /**
      * 初始化设备码（插件设备码流）
-     * @return array{device_code: string, user_code: string}
+     * @return array{device_code: string, user_code: string, sso_request_id: string}
      */
     public static function deviceInit(OAuthClientModel $client): array
     {
         $deviceCode = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
         do {
             $userCode = random_code(6, true);
-        } while (Redis::exists(self::DEVICE_UC_PREFIX . $userCode));
+        } while (!Redis::set(self::DEVICE_UC_PREFIX . $userCode, $deviceCode, 'EX', self::DEVICE_TTL, 'NX'));
 
         // ssoRequestId（43 位不透明）: ExWebsite（user-web）登录 UI 的接收端句柄
         $ssoRequestId = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
@@ -183,7 +183,6 @@ class OAuthService
             'user_id' => 0,
             'scopes' => $client->scopes,
         ]));
-        Redis::setex(self::DEVICE_UC_PREFIX . $userCode, self::DEVICE_TTL, $deviceCode);
         Redis::setex(self::DEVICE_SSO_PREFIX . $ssoRequestId, self::DEVICE_TTL, $deviceCode);
 
         return ['device_code' => $deviceCode, 'user_code' => $userCode, 'sso_request_id' => $ssoRequestId];
@@ -224,57 +223,90 @@ class OAuthService
             return null;
         }
         $data = json_decode($raw, true);
-        if (!is_array($data)) {
+        $ttl = (int) Redis::ttl(self::DEVICE_PREFIX . $deviceCode);
+        if (!is_array($data) || ($data['sso_request_id'] ?? '') !== $ssoRequestId || $ttl <= 0) {
             return null;
         }
         return [
             'device_code' => (string) $deviceCode,
             'data' => $data,
-            'ttl' => (int) Redis::ttl(self::DEVICE_PREFIX . $deviceCode),
+            'ttl' => $ttl,
         ];
     }
 
     /**
      * 用户在验证页确认授权
      */
-    public static function deviceAuthorize(string $deviceCode, int $userId, array $scopes): void
+    public static function deviceAuthorize(string $deviceCode, int $userId, array $scopes): bool
     {
-        $raw = Redis::get(self::DEVICE_PREFIX . $deviceCode);
-        if (!$raw) {
-            return;
-        }
-        $data = json_decode($raw, true);
-        $data['status'] = 'authorized';
-        $data['user_id'] = $userId;
-        $data['scopes'] = $scopes;
-        $ttl = Redis::ttl(self::DEVICE_PREFIX . $deviceCode);
-        if ($ttl > 0) {
-            Redis::setex(self::DEVICE_PREFIX . $deviceCode, $ttl, json_encode($data));
-        }
+        // 状态检查与写入原子执行，不能覆盖其他用户的确认或复活已撤销的请求。
+        $script = <<<'LUA'
+local raw = redis.call('GET', KEYS[1])
+local ttl = redis.call('PTTL', KEYS[1])
+if not raw or ttl <= 0 then return 0 end
+local ok, data = pcall(cjson.decode, raw)
+if not ok or type(data) ~= 'table' then return 0 end
+if data.status == 'authorized' then
+    return tonumber(data.user_id) == tonumber(ARGV[1]) and 1 or 0
+end
+if data.status ~= 'pending' then return 0 end
+data.status = 'authorized'
+data.user_id = tonumber(ARGV[1])
+data.scopes = cjson.decode(ARGV[2])
+redis.call('SET', KEYS[1], cjson.encode(data), 'PX', ttl)
+return 1
+LUA;
+        return (int) Redis::eval($script, 1, self::DEVICE_PREFIX . $deviceCode, $userId, json_encode(array_values($scopes))) === 1;
     }
 
     /**
      * 插件轮询消费设备码
      * @return array{status: string, data?: array}
      */
-    public static function deviceConsume(string $deviceCode): array
+    public static function deviceConsume(string $deviceCode, string $clientId): array
     {
-        $raw = Redis::get(self::DEVICE_PREFIX . $deviceCode);
-        if (!$raw) {
+        if (!preg_match('/^[A-Za-z0-9_-]{43}$/', $deviceCode)) {
             return ['status' => 'expired_token'];
         }
-        $data = json_decode($raw, true);
-        if (($data['status'] ?? '') !== 'authorized') {
-            return ['status' => 'authorization_pending'];
+        // 先核对所属应用，再一次性消费；重复轮询不能签发第二个会话。
+        $script = <<<'LUA'
+local raw = redis.call('GET', KEYS[1])
+if not raw then return cjson.encode({status = 'expired_token'}) end
+local ok, data = pcall(cjson.decode, raw)
+if not ok or type(data) ~= 'table' then return cjson.encode({status = 'expired_token'}) end
+if data.client_id ~= ARGV[2] then return cjson.encode({status = 'client_mismatch'}) end
+if data.status ~= 'authorized' then return cjson.encode({status = 'authorization_pending'}) end
+local prefix = string.sub(KEYS[1], 1, #KEYS[1] - #ARGV[1])
+redis.call('DEL', KEYS[1])
+for _, suffix in ipairs({'uc:' .. (data.user_code or ''), 'sso:' .. (data.sso_request_id or '')}) do
+    local key = prefix .. suffix
+    if redis.call('GET', key) == ARGV[1] then redis.call('DEL', key) end
+end
+return cjson.encode({status = 'ok', data = data})
+LUA;
+        return json_decode((string) Redis::eval($script, 1, self::DEVICE_PREFIX . $deviceCode, $deviceCode, $clientId), true);
+    }
+
+    /** 撤销设备请求并清除两个反向索引，避免与确认、消费并发时残留或复活。 */
+    public static function deviceRevoke(string $deviceCode): bool
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{43}$/', $deviceCode)) {
+            return false;
         }
-        // 一次性: 授权后删除
-        Redis::del(self::DEVICE_PREFIX . $deviceCode);
-        if (isset($data['user_code'])) {
-            Redis::del(self::DEVICE_UC_PREFIX . $data['user_code']);
-        }
-        if (isset($data['sso_request_id'])) {
-            Redis::del(self::DEVICE_SSO_PREFIX . $data['sso_request_id']);
-        }
-        return ['status' => 'ok', 'data' => $data];
+        $script = <<<'LUA'
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local prefix = string.sub(KEYS[1], 1, #KEYS[1] - #ARGV[1])
+redis.call('DEL', KEYS[1])
+local ok, data = pcall(cjson.decode, raw)
+if ok and type(data) == 'table' then
+    for _, suffix in ipairs({'uc:' .. (data.user_code or ''), 'sso:' .. (data.sso_request_id or '')}) do
+        local key = prefix .. suffix
+        if redis.call('GET', key) == ARGV[1] then redis.call('DEL', key) end
+    end
+end
+return 1
+LUA;
+        return (int) Redis::eval($script, 1, self::DEVICE_PREFIX . $deviceCode, $deviceCode) === 1;
     }
 }

@@ -39,7 +39,7 @@ class NotificationController
 
     $data = NotificationService::list((int) $request->uid, $view, $scope, $category, $cursor, $limit);
     $data['readThroughToken'] = NotificationService::summary((int) $request->uid)['readThroughToken'];
-    $data['serverTime'] = time();
+    $data['serverTime'] = time() * 1000;
     return success($data);
   }
 
@@ -89,7 +89,7 @@ class NotificationController
       'read' => (bool) $post['read'],
       'stateRevision' => (int) $result['stateRevision'],
       'unreadCount' => NotificationService::unreadCount((int) $request->uid),
-      'serverTime' => time(),
+      'serverTime' => time() * 1000,
     ]);
   }
 

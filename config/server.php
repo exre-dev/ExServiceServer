@@ -19,5 +19,6 @@ return [
     'status_file' => runtime_path() . '/webman.status',
     'stdout_file' => runtime_path() . '/logs/stdout.log',
     'log_file' => runtime_path() . '/logs/workerman.log',
-    'max_package_size' => 10 * 1024 * 1024
+    // 单附件上限 20MiB，额外预留 1MiB 给 multipart 边界和请求头。
+    'max_package_size' => \app\common\services\StorageService::MAX_BYTES + 1024 * 1024
 ];

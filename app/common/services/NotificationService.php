@@ -10,7 +10,7 @@ use support\Redis;
  * 站内通知服务（用户侧网站, ExWebsite Contract 通知端点）
  *
  * 职责：未读谓词/清理谓词查询、签名游标与短令牌、read-all/clear 幂等。
- * 输出字段名直接采用契约 camelCase（receiptId/summaryText/...），页面层只解 {msg,data} 信封。
+ * 输出字段名直接采用契约 camelCase（receiptId/summaryText/...），时间统一为毫秒，数据库和签名令牌仍使用秒。
  *
  * 签名格式（NotificationCursor/NotificationToken 同构）: base64url(payload) . base64url(hmac 截断)
  * payload 绑定 uid+用途+上界+过期，跨身份/跨用途复用即校验失败。
@@ -108,7 +108,7 @@ class NotificationService
             'stateVersion' => (int) Redis::get("notify:sv:{$uid}") ?: 0,
             'upperSequence' => (int) ($upper ?? 0),
             'readThroughToken' => self::sign($uid, 'read-through', ['upper' => (int) ($upper ?? 0)], self::READ_TOKEN_TTL),
-            'serverTime' => time(),
+            'serverTime' => time() * 1000,
         ];
     }
 
@@ -131,8 +131,8 @@ class NotificationService
             'category' => $row->category,
             'necessity' => $row->necessity,
             'sequence' => (int) $row->id,
-            'deliveredAt' => strtotime((string) $row->created_time) ?: 0,
-            'readAt' => $row->read_at !== null ? (int) $row->read_at : null,
+            'deliveredAt' => (strtotime((string) $row->created_time) ?: 0) * 1000,
+            'readAt' => $row->read_at !== null ? (int) $row->read_at * 1000 : null,
             'clearedAt' => null,
             'lifecycle' => $expired ? 'expired' : 'active',
             'stateRevision' => (int) $row->state_revision,
@@ -148,7 +148,7 @@ class NotificationService
             'contentFallbackText' => $row->body_text !== null && $row->body_text !== '' ? (string) $row->body_text : null,
             'actions' => self::actionsPayload((array) ($row->actions ?? []), $expired),
             'actionsAvailable' => !empty((array) ($row->actions ?? [])),
-            'serverTime' => time(),
+            'serverTime' => time() * 1000,
         ];
     }
 
@@ -217,7 +217,7 @@ class NotificationService
             'watermarkSequence' => $upper,
             'unreadCount' => self::unreadCount($uid),
             'replayed' => false,
-            'serverTime' => time(),
+            'serverTime' => time() * 1000,
         ];
         self::bumpStateVersion($uid);
         Redis::setex($key, self::IDEMPOTENT_TTL, json_encode($result));
@@ -244,8 +244,8 @@ class NotificationService
                 'upper' => $upper,
                 'count' => $count,
             ], self::CLEAR_TOKEN_TTL),
-            'expiresAt' => time() + self::CLEAR_TOKEN_TTL,
-            'serverTime' => time(),
+            'expiresAt' => (time() + self::CLEAR_TOKEN_TTL) * 1000,
+            'serverTime' => time() * 1000,
         ];
     }
 
@@ -283,7 +283,7 @@ class NotificationService
             'skippedCount' => max(0, (int) ($payload['count'] ?? 0) - $affected),
             'unreadCount' => self::unreadCount($uid),
             'replayed' => false,
-            'serverTime' => time(),
+            'serverTime' => time() * 1000,
         ];
         self::bumpStateVersion($uid);
         Redis::setex($key, self::IDEMPOTENT_TTL, json_encode($result));
@@ -375,8 +375,8 @@ class NotificationService
             'category' => $row->category,
             'necessity' => $row->necessity,
             'sequence' => (int) $row->id,
-            'deliveredAt' => strtotime((string) $row->created_time) ?: 0,
-            'readAt' => $row->read_at !== null ? (int) $row->read_at : null,
+            'deliveredAt' => (strtotime((string) $row->created_time) ?: 0) * 1000,
+            'readAt' => $row->read_at !== null ? (int) $row->read_at * 1000 : null,
             'expired' => (bool) $expired,
             'stateRevision' => (int) $row->state_revision,
         ];

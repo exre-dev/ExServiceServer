@@ -84,12 +84,15 @@ class DeviceController
       return fail("client_secret 无效", 401);
     }
 
-    $res = OAuthService::deviceConsume($deviceCode);
+    $res = OAuthService::deviceConsume($deviceCode, $clientId);
     if ($res['status'] === 'expired_token') {
       return fail("设备码已过期, 请重新发起", 400);
     }
     if ($res['status'] === 'authorization_pending') {
       return json(['error' => 'authorization_pending']);
+    }
+    if ($res['status'] === 'client_mismatch') {
+      throw new ApiException("设备码与应用不匹配");
     }
     $data = $res['data'];
     if (($data['client_id'] ?? '') !== $clientId) {
@@ -138,7 +141,9 @@ class DeviceController
 
     $scopes = is_array($client->scopes) ? $client->scopes : ['user.basic'];
     OAuthService::upsertGrant((int) $request->uid, $client->client_id, $scopes);
-    OAuthService::deviceAuthorize((string) $device['device_code'], (int) $request->uid, $scopes);
+    if (!OAuthService::deviceAuthorize((string) $device['device_code'], (int) $request->uid, $scopes)) {
+      throw new ApiException("设备请求已失效或已被处理, 请重新发起", 409);
+    }
 
     AuditService::log((int) $request->uid, 'user', 'oauth.grant', [
       'client_id' => $client->client_id,

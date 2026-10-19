@@ -14,8 +14,8 @@ use support\Response;
 /**
  * 设备/SSO 授权请求管理（平台管理端, /api/admin/sso-requests）
  *
- * 设备码与 SSO 请求均存 Redis（10 分钟短命），列表实时 SCAN 汇总；
- * 撤销 = 删除请求键（插件轮询立即 authorization_pending 失效）。
+ * 设备码与 SSO 请求均存 Redis（10 分钟短命），列表实时汇总；
+ * 撤销后浏览器与插件轮询立即失效。
  */
 class SsoController
 {
@@ -27,8 +27,12 @@ class SsoController
     $items = [];
     // 设备请求键短命（10 分钟 TTL）且量小, KEYS 直查即可（SCAN 引用游标经门面转发行为不稳）
     $keys = Redis::keys(OAuthService::DEVICE_PREFIX . '*');
+    $prefix = (string) Redis::connection()->client()->getOption(\Redis::OPT_PREFIX);
     foreach ((array) $keys as $key) {
       $key = (string) $key;
+      if ($prefix !== '' && str_starts_with($key, $prefix)) {
+        $key = substr($key, strlen($prefix));
+      }
       // 跳过反向索引键（device:uc:* / device:sso:*）
       if (str_starts_with($key, OAuthService::DEVICE_UC_PREFIX)
         || str_starts_with($key, OAuthService::DEVICE_SSO_PREFIX)) {
@@ -74,18 +78,8 @@ class SsoController
    */
   public function revoke(Request $request, string $deviceCode): Response
   {
-    $key = OAuthService::DEVICE_PREFIX . $deviceCode;
-    $raw = Redis::get($key);
-    if ($raw === null) {
-      throw new ApiException("请求不存在或已过期");
-    }
-    $data = json_decode((string) $raw, true);
-    Redis::del($key);
-    if (isset($data['user_code'])) {
-      Redis::del(OAuthService::DEVICE_UC_PREFIX . $data['user_code']);
-    }
-    if (isset($data['sso_request_id'])) {
-      Redis::del(OAuthService::DEVICE_SSO_PREFIX . $data['sso_request_id']);
+    if (!OAuthService::deviceRevoke($deviceCode)) {
+      throw new ApiException("请求不存在或已过期", 404);
     }
 
     AuditService::log(null, 'platform', 'oauth.device_revoke', [

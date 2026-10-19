@@ -56,6 +56,9 @@ class InvitationService
      */
     public static function send(string $email): array
     {
+        // 在生成验证码、写入冷却或发送邮件之前拦截已注册邮箱。
+        self::check($email);
+
         $cdKey = "invite:cd:{$email}";
         if (Redis::exists($cdKey)) {
             throw new ApiException("发送过于频繁, 请稍后再试", 429);

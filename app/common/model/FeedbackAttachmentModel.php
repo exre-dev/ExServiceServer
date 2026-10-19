@@ -12,7 +12,7 @@ namespace app\common\model;
  * @property integer $byte_length 字节数
  * @property string $sha256 SHA-256
  * @property string $status expected/uploaded
- * @property string|null $storage_key 落盘键(runtime/uploads 下相对路径)
+ * @property string|null $storage_key 落盘键(public/uploads 下相对路径)
  * @property string $created_time 创建时间
  * @property string $updated_time 更新时间
  */

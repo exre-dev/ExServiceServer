@@ -36,8 +36,8 @@ class SsoController
     return success([
       'ssoRequestId' => $ssoRequestId,
       'status' => ($device['data']['status'] ?? '') === 'authorized' ? 'completed' : 'pending',
-      'expiresAt' => time() + max(0, $device['ttl']),
-      'serverTime' => time(),
+      'expiresAt' => (time() + max(0, $device['ttl'])) * 1000,
+      'serverTime' => time() * 1000,
     ]);
   }
 
@@ -109,7 +109,9 @@ class SsoController
 
     $scopes = is_array($client->scopes) ? $client->scopes : ['user.basic'];
     OAuthService::upsertGrant($userId, $client->client_id, $scopes);
-    OAuthService::deviceAuthorize($device['device_code'], $userId, $scopes);
+    if (!OAuthService::deviceAuthorize($device['device_code'], $userId, $scopes)) {
+      throw new ApiException("SSO 请求已失效或已被处理, 请重新发起", 409);
+    }
 
     AuditService::log($userId, 'user', 'oauth.grant', [
       'client_id' => $client->client_id,

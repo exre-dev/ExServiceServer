@@ -7,7 +7,7 @@ use app\common\exception\ApiException;
 /**
  * 本地文件存储服务（storage file 介质 + 反馈附件落盘共用）
  *
- * 上传根目录 runtime/uploads/；key 按契约 StorageKey 规则校验
+ * 通用上传根目录 runtime/uploads/，反馈附件使用 public/uploads/；key 按契约 StorageKey 规则校验
  * （小写分段、拒绝 Windows 保留名、解析后必须仍在根目录内）。
  */
 class StorageService
@@ -22,20 +22,24 @@ class StorageService
         'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9',
     ];
 
-    public static function root(): string
+    public static function root(bool $public = false): string
     {
-        // realpath 归一分隔符: Windows 下 runtime_path() 带尾斜杠且与 realpath 输出混合, 越界比较会误判
-        $dir = rtrim(runtime_path(), '/\\') . DIRECTORY_SEPARATOR . 'uploads';
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+        // realpath 归一分隔符，避免 Windows 混合分隔符造成越界误判。
+        $dir = rtrim($public ? public_path() : runtime_path(), '/\\') . DIRECTORY_SEPARATOR . 'uploads';
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            throw new ApiException("无法创建上传目录", 503);
         }
-        return (string) realpath($dir);
+        $root = realpath($dir);
+        if ($root === false) {
+            throw new ApiException("上传目录不可用", 503);
+        }
+        return $root;
     }
 
     /**
      * 校验存储 key（契约 ^[a-z0-9](...)(/...)*$ + 保留名 + 越界检查）
      */
-    public static function validKey(string $key): bool
+    public static function validKey(string $key, bool $public = false): bool
     {
         if ($key === '' || strlen($key) > 240) {
             return false;
@@ -50,41 +54,49 @@ class StorageService
             }
         }
         // 已存在的路径必须仍在根目录内（防越界; 不存在的目标由 put 时 mkdir 创建）
-        $real = realpath(self::root() . '/' . $key);
-        if ($real !== false && !str_starts_with($real, self::root() . DIRECTORY_SEPARATOR)) {
+        $root = self::root($public);
+        $real = realpath($root . '/' . $key);
+        if ($real !== false && !str_starts_with($real, $root . DIRECTORY_SEPARATOR)) {
             return false;
         }
         return true;
     }
 
     /**
-     * 写入文件（返回相对 key）
+     * 写入文件（public=true 时保存到 public/uploads）
      */
-    public static function put(string $key, string $bytes): void
+    public static function put(string $key, string $bytes, bool $public = false): void
     {
-        if (!self::validKey($key)) {
+        if (!self::validKey($key, $public)) {
             throw new ApiException("存储路径非法");
         }
         if (strlen($bytes) > self::MAX_BYTES) {
             throw new ApiException("文件超过大小上限", 413);
         }
-        $path = self::root() . '/' . $key;
+        $root = self::root($public);
+        $path = $root . '/' . $key;
         $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            throw new ApiException("无法创建附件目录", 503);
         }
-        file_put_contents($path, $bytes);
+        $realDir = realpath($dir);
+        if ($realDir === false || ($realDir !== $root && !str_starts_with($realDir, $root . DIRECTORY_SEPARATOR))) {
+            throw new ApiException("存储路径非法");
+        }
+        if (@file_put_contents($path, $bytes, LOCK_EX) !== strlen($bytes)) {
+            throw new ApiException("文件保存失败, 请稍后重试", 503);
+        }
     }
 
     /**
      * 读取文件（返回 null 表示不存在）
      */
-    public static function get(string $key): ?string
+    public static function get(string $key, bool $public = false): ?string
     {
-        if (!self::validKey($key)) {
+        if (!self::validKey($key, $public)) {
             return null;
         }
-        $path = self::root() . '/' . $key;
+        $path = self::root($public) . '/' . $key;
         if (!is_file($path)) {
             return null;
         }
@@ -94,10 +106,10 @@ class StorageService
     /**
      * 删除文件（静默）
      */
-    public static function delete(string $key): void
+    public static function delete(string $key, bool $public = false): void
     {
-        if (self::validKey($key) && $key !== '') {
-            $path = self::root() . '/' . $key;
+        if (self::validKey($key, $public) && $key !== '') {
+            $path = self::root($public) . '/' . $key;
             if (is_file($path)) {
                 unlink($path);
             }

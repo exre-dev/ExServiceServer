@@ -9,6 +9,7 @@ use app\common\services\AuditService;
 use app\common\services\StorageService;
 use support\Request;
 use support\Response;
+use Webman\Http\UploadFile;
 
 /**
  * 用户反馈（用户侧, /api/support/feedback/*）
@@ -176,13 +177,16 @@ class FeedbackController
     }
 
     $file = $request->file('file');
-    if (!$file || !$file->isValid()) {
+    if (!$file instanceof UploadFile || !$file->isValid()) {
       throw new ApiException("缺少 file 文件部分");
     }
     if ($file->getSize() > StorageService::MAX_BYTES) {
       throw new ApiException("附件超过大小上限", 413);
     }
-    $bytes = (string) file_get_contents($file->getRealPath());
+    $bytes = file_get_contents($file->getRealPath());
+    if ($bytes === false) {
+      throw new ApiException("附件读取失败, 请重试", 503);
+    }
     $actualHash = hash('sha256', $bytes);
     if ($actualHash !== $att->sha256) {
       throw new ApiException("附件内容与声明不一致, 请重试", 409);
@@ -191,8 +195,9 @@ class FeedbackController
       throw new ApiException("附件大小与声明不一致, 请重试", 409);
     }
 
-    $storageKey = 'feedback/' . $att->uuid . '/' . rawurlencode($att->original_name);
-    StorageService::put($storageKey, $bytes);
+    // 原始文件名仅保留在元数据中，磁盘使用固定名称，兼容中文、空格及大写扩展名并避免执行上传脚本。
+    $storageKey = 'feedback/' . $att->uuid . '/attachment.bin';
+    StorageService::put($storageKey, $bytes, public: true);
 
     $att->status = 'uploaded';
     $att->storage_key = $storageKey;
