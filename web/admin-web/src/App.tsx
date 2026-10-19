@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { Card } from 'antd';
+import { useCallback, useEffect, useState } from 'react';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Button, Card, Result, Spin } from 'antd';
 import { useAuth } from './store';
 import AdminLayout from './layouts/AdminLayout';
 import Login from './pages/Login';
@@ -23,6 +24,7 @@ import Notifications from './pages/Notifications';
 import SsoRequests from './pages/SsoRequests';
 import Feedback from './pages/Feedback';
 import ServerDocs from './pages/server/Docs';
+import Installation, { installationRequest, type InstallationStatus } from './pages/Installation';
 
 /** 登录保护 */
 function RequireAuth() {
@@ -45,8 +47,31 @@ function Landing() {
 }
 
 export default function App() {
+  const [installation, setInstallation] = useState<InstallationStatus | null>(null);
+  const [installationError, setInstallationError] = useState('');
+  const location = useLocation();
+  const logout = useAuth(s => s.logout);
+  const checkInstallation = useCallback(async () => {
+    setInstallationError('');
+    try {
+      setInstallation(await installationRequest<InstallationStatus>('status'));
+    } catch (error) {
+      setInstallationError(error instanceof Error ? error.message : '无法检查初始化状态');
+    }
+  }, []);
+
+  useEffect(() => { void checkInstallation(); }, [checkInstallation]);
+
+  if (installationError) return <Result status="error" title="无法连接初始化服务" subTitle={installationError} extra={<Button onClick={checkInstallation}>重试</Button>} />;
+  if (!installation) return <div style={{ display: 'grid', minHeight: '100vh', placeItems: 'center' }}><Spin tip="正在检查初始化状态…"><div style={{ padding: 50 }} /></Spin></div>;
+  if (!installation.installed) {
+    if (location.pathname !== '/install') return <Navigate to="/install" replace />;
+    return <Installation status={installation} onRetry={checkInstallation} onComplete={() => { logout(); void checkInstallation(); }} />;
+  }
+
   return (
     <Routes>
+      <Route path="/install" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
       <Route element={<RequireAuth />}>
         <Route element={<AdminLayout />}>

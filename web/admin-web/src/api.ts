@@ -30,6 +30,10 @@ http.interceptors.response.use(
     const data = err.response?.data;
     // 兼容 fail() 的 msg 与框架兜底的 message 两种错误体
     const msg: string = data?.msg || data?.message || err.message || '请求失败';
+    if (err.response?.status === 503 && err.response?.headers?.['x-setup-required'] === '1') {
+      location.href = '/install';
+      return Promise.reject(err);
+    }
     if (err.response?.status === 401 && location.pathname !== '/login') {
       localStorage.removeItem('exre_token');
       localStorage.removeItem('exre_user');
