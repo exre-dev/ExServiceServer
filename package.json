@@ -1,0 +1,19 @@
+{
+  "name": "exre-php-dev-tools",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write \"**/*.{php,ts,js,jsx,tsx,mjs,cjs}\"",
+    "format:check": "prettier --check \"**/*.{php,ts,js,jsx,tsx,mjs,cjs}\"",
+    "test:hooks": "node --test tests/pre-commit.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.22.1"
+  },
+  "devDependencies": {
+    "@prettier/plugin-php": "0.26.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
+    "prettier": "3.9.10"
+  }
+}

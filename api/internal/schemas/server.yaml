@@ -1,0 +1,640 @@
+ServerAccount:
+  properties:
+    contact_qq:
+      type: string
+    created_time:
+      nullable: true
+      type: string
+    description:
+      type: string
+    id:
+      description: 空间管理接口的数据结构。
+      type: integer
+    logo:
+      type: string
+    name:
+      type: string
+    note:
+      description: 当前完整模型序列化包含平台备注字段
+      type: string
+    owner_user_id:
+      type: integer
+    slug:
+      type: string
+    status:
+      enum:
+        - active
+        - suspended
+        - closed
+      type: string
+    updated_time:
+      nullable: true
+      type: string
+  type: object
+ServerBinding:
+  properties:
+    code:
+      description: 完整绑定码，仅空间管理端返回；无真实凭据示例
+      type: string
+    created_by:
+      nullable: true
+      type: integer
+    created_time:
+      nullable: true
+      type: string
+    expires_time:
+      nullable: true
+      type: string
+    features:
+      description: '功能键到布尔值的映射；空映射经 array cast 可输出 []'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          type: object
+        -
+          items:
+            type: boolean
+          maxItems: 0
+          type: array
+    id:
+      type: integer
+    last_heartbeat:
+      nullable: true
+      type: string
+    last_heartbeat_ip:
+      type: string
+    plugin:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/ServerBindingPlugin'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    plugin_id:
+      type: integer
+    server_id:
+      type: integer
+    server_key_hash:
+      description: '当前序列化包含首次绑定的服务器密钥 SHA-256；未绑定为空字符串'
+      type: string
+    status:
+      enum:
+        - active
+        - revoked
+        - disabled
+      type: string
+    updated_time:
+      nullable: true
+      type: string
+  type: object
+ServerBindingCodeData:
+  properties:
+    code:
+      pattern: '^EX-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}(-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}){3}$'
+      type: string
+  type: object
+ServerBindingPlugin:
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    slug:
+      type: string
+    status:
+      enum:
+        - draft
+        - online
+        - offline
+      type: string
+  type: object
+ServerBindingsData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerBinding'
+      type: array
+    plugin_options:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerPluginOption'
+      type: array
+    server_status:
+      enum:
+        - active
+        - suspended
+        - closed
+      nullable: true
+      type: string
+  type: object
+ServerBoundUser:
+  properties:
+    id:
+      type: integer
+    username:
+      type: string
+  type: object
+ServerClient:
+  properties:
+    client_id:
+      type: string
+    client_status:
+      enum:
+        - active
+        - suspended
+      type: string
+    disconnected_time:
+      nullable: true
+      type: string
+    id:
+      type: integer
+    link_status:
+      enum:
+        - active
+        - disconnected
+      type: string
+    name:
+      type: string
+    scopes:
+      items:
+        type: string
+      type: array
+  type: object
+ServerClientInput:
+  properties:
+    client_id:
+      type: string
+  required:
+    - client_id
+  type: object
+ServerClientsData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerClient'
+      type: array
+  type: object
+ServerCreatedIdData:
+  properties:
+    id:
+      type: integer
+  type: object
+ServerFeature:
+  properties:
+    default_enabled:
+      type: boolean
+    feature_key:
+      type: string
+    id:
+      type: integer
+    name:
+      type: string
+    plugin_id:
+      type: integer
+  type: object
+ServerFeatureSummary:
+  properties:
+    default_enabled:
+      type: boolean
+    feature_key:
+      type: string
+    name:
+      type: string
+  type: object
+ServerIdent:
+  properties:
+    bound_server_id:
+      nullable: true
+      type: integer
+    created_time:
+      nullable: true
+      type: string
+    id:
+      type: integer
+    ident_type:
+      enum:
+        - fivem_license
+        - steam
+        - discord
+        - qq
+      type: string
+    ident_value:
+      description: 列表当前返回完整游戏标识
+      type: string
+    user:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/ServerUserSummary'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    user_id:
+      type: integer
+  type: object
+ServerIdentBindInput:
+  properties:
+    ticket:
+      description: '游戏中生成的一次性 ticket，300 秒有效；取出后即消费，后续校验失败也不恢复'
+      type: string
+    user_id:
+      minimum: 1
+      type: integer
+  required:
+    - ticket
+    - user_id
+  type: object
+ServerIdentBoundData:
+  properties:
+    ident_tail:
+      description: '省略号加标识最后 8 位'
+      type: string
+    user:
+      $ref: '../openapi.yaml#/components/schemas/ServerBoundUser'
+  type: object
+ServerIdentsData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerIdent'
+      type: array
+  type: object
+ServerManagedSpace:
+  properties:
+    id:
+      type: integer
+    logo:
+      type: string
+    my_role:
+      enum:
+        - owner
+        - admin
+      type: string
+    name:
+      type: string
+    slug:
+      type: string
+  type: object
+ServerMember:
+  properties:
+    created_time:
+      nullable: true
+      type: string
+    id:
+      type: integer
+    joined_time:
+      nullable: true
+      type: string
+    role_key:
+      enum:
+        - owner
+        - admin
+        - member
+      type: string
+    server_id:
+      type: integer
+    source:
+      enum:
+        - grant
+        - manual
+        - bind
+      type: string
+    status:
+      enum:
+        - active
+        - banned
+        - left
+      type: string
+    updated_time:
+      nullable: true
+      type: string
+    user:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/ServerMemberUser'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    user_id:
+      type: integer
+  type: object
+ServerMemberAddInput:
+  properties:
+    keyword:
+      description: '邮箱或 QQ 精确匹配；去除首尾空白后非空'
+      type: string
+    role:
+      default: member
+      enum:
+        - admin
+        - member
+      type: string
+  required:
+    - keyword
+  type: object
+ServerMemberPermission:
+  properties:
+    allowed:
+      type: boolean
+    binding_id:
+      type: integer
+    binding_status:
+      enum:
+        - active
+        - revoked
+        - disabled
+      type: string
+    feature_list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerFeatureSummary'
+      type: array
+    features:
+      description: '功能键到布尔值的映射或布尔数组；连续数字键经 PHP 数组序列化可输出非空数组，null 表示无功能覆盖'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          nullable: true
+          type: object
+        -
+          items:
+            type: boolean
+          type: array
+    has_perm_row:
+      type: boolean
+    plugin_id:
+      type: integer
+    plugin_name:
+      nullable: true
+      type: string
+    plugin_slug:
+      nullable: true
+      type: string
+    plugin_status:
+      nullable: true
+      type: string
+  type: object
+ServerMemberPermissionsData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerMemberPermission'
+      type: array
+    member:
+      $ref: '../openapi.yaml#/components/schemas/ServerPermissionMember'
+  type: object
+ServerMemberRoleInput:
+  properties:
+    role:
+      enum:
+        - admin
+        - member
+      type: string
+  required:
+    - role
+  type: object
+ServerMemberUser:
+  properties:
+    avatar:
+      type: string
+    email:
+      type: string
+    id:
+      type: integer
+    qq:
+      nullable: true
+      type: string
+    username:
+      type: string
+  type: object
+ServerMembersData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerMember'
+      type: array
+    my_role:
+      enum:
+        - owner
+        - admin
+        - member
+      type: string
+  type: object
+ServerMineData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerManagedSpace'
+      type: array
+  type: object
+ServerOverviewData:
+  properties:
+    binding_count:
+      type: integer
+    ident_count:
+      type: integer
+    member_count:
+      type: integer
+    my_role:
+      enum:
+        - owner
+        - admin
+        - member
+      type: string
+    server:
+      $ref: '../openapi.yaml#/components/schemas/ServerAccount'
+  type: object
+ServerPermissionBinding:
+  properties:
+    expires_time:
+      nullable: true
+      type: string
+    features:
+      description: '功能键到布尔值的映射；空映射经 array cast 可输出 []'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          type: object
+        -
+          items:
+            type: boolean
+          maxItems: 0
+          type: array
+    id:
+      type: integer
+    plugin_id:
+      type: integer
+    status:
+      enum:
+        - active
+        - revoked
+        - disabled
+      type: string
+  type: object
+ServerPermissionMatrixData:
+  properties:
+    binding:
+      $ref: '../openapi.yaml#/components/schemas/ServerPermissionBinding'
+    features:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerFeature'
+      type: array
+    rows:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ServerPermissionRow'
+      type: array
+  type: object
+ServerPermissionMember:
+  properties:
+    avatar:
+      description: 没有插件绑定时此字段省略
+      nullable: true
+      type: string
+    email:
+      nullable: true
+      type: string
+    role_key:
+      enum:
+        - owner
+        - admin
+        - member
+      type: string
+    user_id:
+      type: integer
+    username:
+      nullable: true
+      type: string
+  type: object
+ServerPermissionPushData:
+  properties:
+    plugins:
+      items:
+        type: string
+      type: array
+  type: object
+ServerPermissionPushInput:
+  properties:
+    plugin_id:
+      default: 0
+      description: '大于 0 仅下发指定插件，省略或不大于 0 下发全部绑定插件'
+      type: integer
+  type: object
+ServerPermissionRow:
+  properties:
+    allowed:
+      description: '没有覆盖记录时为 true'
+      type: boolean
+    email:
+      nullable: true
+      type: string
+    features:
+      description: '功能键到布尔值的映射或布尔数组；连续数字键经 PHP 数组序列化可输出非空数组，null 表示无功能覆盖'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          nullable: true
+          type: object
+        -
+          items:
+            type: boolean
+          type: array
+    has_perm_row:
+      type: boolean
+    role_key:
+      enum:
+        - owner
+        - admin
+        - member
+      type: string
+    user_id:
+      type: integer
+    username:
+      nullable: true
+      type: string
+  type: object
+ServerPermissionSaveInput:
+  description: '仅保留该插件已知功能键并转为 bool；features 缺失或 null 清除功能覆盖，空映射保留空覆盖记录。'
+  properties:
+    allowed:
+      default: true
+      type: boolean
+    features:
+      description: '功能键到布尔值的映射或布尔数组；连续数字键经 PHP 数组序列化可输出非空数组，null 表示无功能覆盖'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          nullable: true
+          type: object
+        -
+          items:
+            type: boolean
+          type: array
+    plugin_id:
+      type: integer
+    user_id:
+      type: integer
+  required:
+    - plugin_id
+    - user_id
+  type: object
+ServerPermissionTargetInput:
+  properties:
+    plugin_id:
+      type: integer
+    user_id:
+      type: integer
+  required:
+    - plugin_id
+    - user_id
+  type: object
+ServerPluginIdInput:
+  properties:
+    plugin_id:
+      type: integer
+  required:
+    - plugin_id
+  type: object
+ServerPluginOption:
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    slug:
+      type: string
+  type: object
+ServerSettingsInput:
+  properties:
+    contact_qq:
+      type: string
+    description:
+      type: string
+    logo:
+      type: string
+    name:
+      type: string
+  type: object
+ServerUserSummary:
+  properties:
+    avatar:
+      type: string
+    email:
+      type: string
+    id:
+      type: integer
+    username:
+      type: string
+  type: object
+ServerVersionData:
+  properties:
+    version:
+      type: integer
+  type: object

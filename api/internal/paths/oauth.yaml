@@ -1,0 +1,295 @@
+/api/auth/sso/confirm:
+  post:
+    description: '使用 CheckLogin 注入的当前用户身份确认设备请求。请求不存在或过期为 404；已完成、并发处理或应用停用为 409。插件继续轮询 device/token 获取 OAuth 令牌。'
+    operationId: confirmInternalSsoRequest
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/SsoRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/SsoRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/SsoCompletedResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '404':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 'SSO 请求不存在或已过期。'
+      '409':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 设备请求已完成、已失效、被其他用户处理或应用已停用。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: '使用当前会话确认 SSO 授权'
+    tags:
+      - '内部 SSO'
+    x-audience: internal
+/api/auth/sso/inspect:
+  post:
+    description: '免登录；检查 device/init 返回的 sso_request_id。不存在、格式不匹配或过期均返回 404；时间为 Unix 毫秒。'
+    operationId: inspectInternalSsoRequest
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/SsoRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/SsoRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/SsoInspectResponse'
+        description: 操作成功。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '404':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 'SSO 请求不存在或已过期。'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: '查询用户网站 SSO 请求状态'
+    tags:
+      - '内部 SSO'
+    x-audience: internal
+/api/auth/sso/login:
+  post:
+    description: '免登录；可选图片验证码传入后会校验。凭据错误为 400，用户禁用为 403，SSO 请求不存在或过期为 404，已完成、并发处理或应用停用为 409。本动作只确认设备请求，不签发浏览器本地会话；插件继续轮询 device/token。'
+    operationId: loginInternalSsoRequest
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/SsoLoginRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/SsoLoginRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/SsoCompletedResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '404':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 'SSO 请求不存在或已过期。'
+      '409':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 设备请求已完成、已失效、被其他用户处理或应用已停用。
+      '422':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 图片验证码不正确或已过期。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: '使用邮箱密码完成 SSO 授权'
+    tags:
+      - '内部 SSO'
+    x-audience: internal
+/api/oauth/authorize-info:
+  get:
+    description: '需要用户会话；client_id 与 redirect_uri 虽未做独立必填检查，但缺失时应用或回调校验失败，返回 400。'
+    operationId: getInternalOAuthAuthorizationInfo
+    parameters:
+      -
+        description: '必须对应 active third_party 应用。'
+        in: query
+        name: client_id
+        required: true
+        schema:
+          type: string
+      -
+        description: 必须精确匹配应用白名单。
+        in: query
+        name: redirect_uri
+        required: true
+        schema:
+          type: string
+      -
+        description: '与允许 scope 取交集，自动包含 user.basic。'
+        in: query
+        name: scope
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationInfoResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 查询待授权应用信息
+    tags:
+      - '内部 OAuth'
+    x-audience: internal
+/api/oauth/authorize/confirm:
+  post:
+    description: '需要用户会话与 active third_party 应用；校验回调白名单，合并 scope 授权关系并生成 300 秒一次性授权码。响应为包含 code/state 的 redirect 字符串，不是 HTTP 302。'
+    operationId: confirmInternalOAuthAuthorization
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationConfirmRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationConfirmRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationConfirmResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 确认网页授权并返回回调地址
+    tags:
+      - '内部 OAuth'
+    x-audience: internal
+/api/oauth/device/verify:
+  post:
+    description: '需要用户会话；校验用户码和应用状态，创建授权关系并原子确认设备。无效、过期或已使用用户码返回 400，并发状态变化返回 409。'
+    operationId: verifyInternalOAuthDevice
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthDeviceVerifyRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthDeviceVerifyRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/OAuthDeviceVerifyResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '409':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 设备请求已完成、已失效、被其他用户处理或应用已停用。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 确认六位设备用户码
+    tags:
+      - '内部 OAuth'
+    x-audience: internal

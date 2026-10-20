@@ -1,0 +1,158 @@
+components:
+  responses:
+    BusinessError:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessErrorBody'
+      description: '业务错误；HTTP 状态码由接口具体分支决定。'
+    SetupRequired:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessErrorBody'
+      description: 系统尚未初始化。
+      headers:
+        X-Setup-Required:
+          description: '值为 1，提示先完成初始化。'
+          schema:
+            enum:
+              - '1'
+            type: string
+  schemas:
+    BusinessErrorBody:
+      $ref: './schemas/common.yaml#/BusinessErrorBody'
+    OAuthAuthorizationCodeRequest:
+      $ref: './schemas/oauth.yaml#/OAuthAuthorizationCodeRequest'
+    OAuthAuthorizationPending:
+      $ref: './schemas/oauth.yaml#/OAuthAuthorizationPending'
+    OAuthDeviceInitRequest:
+      $ref: './schemas/oauth.yaml#/OAuthDeviceInitRequest'
+    OAuthDeviceInitResponse:
+      $ref: './schemas/oauth.yaml#/OAuthDeviceInitResponse'
+    OAuthDeviceTokenRequest:
+      $ref: './schemas/oauth.yaml#/OAuthDeviceTokenRequest'
+    OAuthTokenResponse:
+      $ref: './schemas/oauth.yaml#/OAuthTokenResponse'
+    PluginBindSelfRequest:
+      $ref: './schemas/plugin.yaml#/PluginBindSelfRequest'
+    PluginBindSelfResponse:
+      $ref: './schemas/plugin.yaml#/PluginBindSelfResponse'
+    PluginBindTicketRequest:
+      $ref: './schemas/plugin.yaml#/PluginBindTicketRequest'
+    PluginBindTicketResponse:
+      $ref: './schemas/plugin.yaml#/PluginBindTicketResponse'
+    PluginFeatures:
+      $ref: './schemas/plugin.yaml#/PluginFeatures'
+    PluginLicenseRequest:
+      $ref: './schemas/plugin.yaml#/PluginLicenseRequest'
+    PluginLicenseResponse:
+      $ref: './schemas/plugin.yaml#/PluginLicenseResponse'
+    PluginMemberPermission:
+      $ref: './schemas/plugin.yaml#/PluginMemberPermission'
+    PluginOAuthIdent:
+      $ref: './schemas/plugin.yaml#/PluginOAuthIdent'
+    PluginOAuthPermission:
+      $ref: './schemas/plugin.yaml#/PluginOAuthPermission'
+    PluginOAuthServer:
+      $ref: './schemas/plugin.yaml#/PluginOAuthServer'
+    PluginOAuthUserInfoResponse:
+      $ref: './schemas/plugin.yaml#/PluginOAuthUserInfoResponse'
+    PluginPermissionBatchResponse:
+      $ref: './schemas/plugin.yaml#/PluginPermissionBatchResponse'
+    PluginPermissionRevisionResponse:
+      $ref: './schemas/plugin.yaml#/PluginPermissionRevisionResponse'
+    PluginTelemetryRequest:
+      $ref: './schemas/plugin.yaml#/PluginTelemetryRequest'
+    PluginTelemetryResponse:
+      $ref: './schemas/plugin.yaml#/PluginTelemetryResponse'
+  securitySchemes:
+    bindCodeAuth:
+      description: 插件绑定码。
+      in: header
+      name: X-Bind-Code
+      type: apiKey
+    oauthBearer:
+      description: 'OAuth 访问令牌。'
+      scheme: bearer
+      type: http
+    sessionAuth:
+      description: '会话 JWT，保留会话撤销和用户状态校验。'
+      scheme: bearer
+      type: http
+info:
+  description: '由 PHP 接口元数据生成；服务器地址相对于当前部署根路径。'
+  title: 'EXRE 社区 API'
+  version: 1.0.0
+openapi: 3.0.3
+paths:
+  /api/oauth/device/init:
+    $ref: './paths/oauth.yaml#/~1api~1oauth~1device~1init'
+  /api/oauth/device/token:
+    $ref: './paths/oauth.yaml#/~1api~1oauth~1device~1token'
+  /api/oauth/token:
+    $ref: './paths/oauth.yaml#/~1api~1oauth~1token'
+  /api/open/ident/bind-self:
+    $ref: './paths/open.yaml#/~1api~1open~1ident~1bind-self'
+  /api/open/ident/bind-ticket:
+    $ref: './paths/open.yaml#/~1api~1open~1ident~1bind-ticket'
+  /api/open/license/validate:
+    $ref: './paths/open.yaml#/~1api~1open~1license~1validate'
+  /api/open/perm/batch:
+    $ref: './paths/open.yaml#/~1api~1open~1perm~1batch'
+  /api/open/perm/rev:
+    $ref: './paths/open.yaml#/~1api~1open~1perm~1rev'
+  /api/open/telemetry:
+    $ref: './paths/open.yaml#/~1api~1open~1telemetry'
+  /api/open/userinfo:
+    $ref: './paths/open.yaml#/~1api~1open~1userinfo'
+  /oauth/authorize:
+    $ref: './paths/oauth.yaml#/~1oauth~1authorize'
+  /oauth/device:
+    $ref: './paths/oauth.yaml#/~1oauth~1device'
+servers:
+  -
+    url: /
+tags:
+  -
+    description: 账号
+    name: 账号
+  -
+    description: 平台管理端
+    name: 平台管理端
+  -
+    description: 文档浏览
+    name: 文档浏览
+  -
+    description: 通知
+    name: 通知
+  -
+    description: 'OAuth 页面'
+    name: 'OAuth 页面'
+  -
+    description: '内部 OAuth'
+    name: '内部 OAuth'
+  -
+    description: 'OAuth 授权'
+    name: 'OAuth 授权'
+  -
+    description: '内部 SSO'
+    name: '内部 SSO'
+  -
+    description: 开放插件
+    name: 开放插件
+  -
+    description: 'OAuth 用户资源'
+    name: 'OAuth 用户资源'
+  -
+    description: 空间管理
+    name: 空间管理
+  -
+    description: 存储
+    name: 存储
+  -
+    description: 反馈
+    name: 反馈
+  -
+    description: 系统
+    name: 系统

@@ -1,0 +1,2894 @@
+/api/admin/bindings:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminBindingIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: 非空时按状态筛选
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+            - active
+            - revoked
+            - disabled
+          type: string
+      -
+        description: 大于0时筛选空间
+        in: query
+        name: server_id
+        required: false
+        schema:
+          type: integer
+      -
+        description: 大于0时筛选插件
+        in: query
+        name: plugin_id
+        required: false
+        schema:
+          type: integer
+      -
+        description: 关键词，去除首尾空白后模糊搜索
+        in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminBindingListItem'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 全局绑定码列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/bindings/{id}/revoke':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。已吊销或不存在返回400；吊销后清缓存，插件下次心跳立即感知。'
+    operationId: adminBindingRevoke
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 吊销绑定码
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/clients:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminClientIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: 非空时筛选应用类型
+        in: query
+        name: type
+        required: false
+        schema:
+          enum:
+            - third_party
+            - plugin
+          type: string
+      -
+        description: 非空时按状态筛选
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+            - active
+            - suspended
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminClientListItem'
+                      type: array
+                    scope_dict:
+                      items:
+                        type: string
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 第三方应用列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。密钥明文仅本次返回。plugin 类应用必须指定 active 空间；third_party 应用空间置空。'
+    operationId: adminClientCreate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              name:
+                minLength: 1
+                type: string
+              note:
+                type: string
+              redirect_uris:
+                default: []
+                items:
+                  format: uri
+                  type: string
+                type: array
+              scopes:
+                description: '自动补充 user.basic；非数组按空数组处理'
+                items:
+                  enum:
+                    - user.basic
+                    - user.email
+                    - idents.read
+                    - perms.read
+                    - servers.read
+                  type: string
+                type: array
+              server_id:
+                description: 'type=plugin 时必填，且对应 active 空间'
+                type: integer
+              type:
+                enum:
+                  - third_party
+                  - plugin
+                type: string
+            required:
+              - name
+              - type
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminClientCreated'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 注册第三方应用
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/clients/{id}/secret-reset':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。撤销该应用的全部会话；新密钥明文仅本次返回。'
+    operationId: adminClientSecretReset
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminClientSecret'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 重置应用密钥
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/clients/{id}/status':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。停用时撤销该应用的全部会话。'
+    operationId: adminClientStatus
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              status:
+                enum:
+                  - active
+                  - suspended
+                type: string
+            required:
+              - status
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新应用状态
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/dashboard:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminDashboardIndex
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminDashboard'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 平台概览
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/doc-categories:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminDocCategories
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminDocCategory'
+                      type: array
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 平台文档分类
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminDocCategoryCreate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              name:
+                minLength: 1
+                type: string
+              sort:
+                default: 0
+                type: integer
+            required:
+              - name
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminId'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 创建平台文档分类
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/doc-categories/{id}':
+  delete:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。删除后其下文档移至未分类；分类不存在也返回成功。'
+    operationId: adminDocCategoryDelete
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 删除平台文档分类
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/docs:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminDocIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: 非空时按状态筛选
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+            - draft
+            - published
+          type: string
+      -
+        description: 大于0时筛选分类
+        in: query
+        name: category_id
+        required: false
+        schema:
+          type: integer
+      -
+        description: 关键词，去除首尾空白后模糊搜索
+        in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminDoc'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 平台文档列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。owner_type 固定为 platform。servers/tags 可见性必须至少包含一个有效空间/标签。'
+    operationId: adminDocCreate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              category_id:
+                description: '0 表示未分类'
+                type: integer
+              content_md:
+                type: string
+              slug:
+                description: '转为小写；无效、空或重复时自动生成唯一 doc- 前缀标识'
+                type: string
+              status:
+                default: draft
+                description: '创建时非法值回退 draft'
+                enum:
+                  - draft
+                  - published
+                type: string
+              title:
+                minLength: 1
+                type: string
+              visibility:
+                default: public
+                enum:
+                  - public
+                  - login
+                  - servers
+                  - tags
+                type: string
+              visible_servers:
+                description: 'visibility=servers 时至少一个有效空间 ID'
+                items:
+                  type: integer
+                type: array
+              visible_tags:
+                description: 'visibility=tags 时至少一个有效标签 ID'
+                items:
+                  type: integer
+                type: array
+            required:
+              - title
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminId'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 创建平台文档
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/docs/{id}':
+  delete:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。限定 platform 归属；文档不存在也返回成功。'
+    operationId: adminDocDelete
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 删除平台文档
+    tags:
+      - 平台管理端
+    x-audience: internal
+  put:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。只更新提供的字段；有字段变动时版本号加1；可见性列表先过滤无效 ID，再校验非空。'
+    operationId: adminDocUpdate
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              category_id:
+                description: '0 表示未分类'
+                type: integer
+              content_md:
+                type: string
+              slug:
+                description: 无效或冲突时自动生成唯一标识
+                type: string
+              title:
+                description: 空标题忽略
+                type: string
+              visibility:
+                enum:
+                  - public
+                  - login
+                  - servers
+                  - tags
+                type: string
+              visible_servers:
+                description: 'servers 可见性至少包含一个有效 ID'
+                items:
+                  type: integer
+                type: array
+              visible_tags:
+                description: 'tags 可见性至少包含一个有效 ID'
+                items:
+                  type: integer
+                type: array
+            type: object
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminVersion'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新平台文档
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/docs/{id}/status':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminDocStatus
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              status:
+                enum:
+                  - draft
+                  - published
+                type: string
+            required:
+              - status
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 发布或撤下平台文档
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/feedback:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminFeedbackIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: '标题不区分大小写模糊匹配，或精确匹配 UUID/恢复键'
+        in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+      -
+        description: 非空时筛选管理状态
+        in: query
+        name: admin_status
+        required: false
+        schema:
+          enum:
+            - pending
+            - processing
+            - resolved
+          type: string
+      -
+        description: 非空时筛选反馈类型
+        in: query
+        name: kind
+        required: false
+        schema:
+          enum:
+            - bug
+            - feature
+            - asset
+            - request
+            - content
+            - campaign
+            - suggestion
+            - complaint
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminFeedbackListItem'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 反馈工单列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/feedback/{id}':
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminFeedbackDetail
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminFeedbackDetail'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 反馈工单详情
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/feedback/{id}/status':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。管理状态允许前进和回退；可同时更新管理员备注。'
+    operationId: adminFeedbackStatus
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              admin_note:
+                type: string
+              admin_status:
+                enum:
+                  - pending
+                  - processing
+                  - resolved
+                type: string
+            required:
+              - admin_status
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 处理反馈工单
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/logs:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminLogIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 20
+          maximum: 100
+          minimum: 1
+          type: integer
+      -
+        description: 动作名前缀匹配
+        in: query
+        name: action
+        required: false
+        schema:
+          type: string
+      -
+        description: 大于0时筛选操作用户
+        in: query
+        name: actor_user_id
+        required: false
+        schema:
+          type: integer
+      -
+        description: 大于0时筛选空间
+        in: query
+        name: server_id
+        required: false
+        schema:
+          type: integer
+      -
+        description: '非空时精确匹配 client_id'
+        in: query
+        name: client_id
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminAuditLog'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 审计日志列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/notifications:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminNotificationIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: 关键词，去除首尾空白后模糊搜索
+        in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminNotificationBatch'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 通知批次列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。community 广播给全部用户，personal 发给指定邮箱用户；为每位接收者保存独立回执。'
+    operationId: adminNotificationCreate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              actions:
+                description: '动作数组或编码该数组的 JSON 字符串；控制器不逐字段校验，按原样存储。'
+                oneOf:
+                  -
+                    items:
+                      additionalProperties: true
+                      properties:
+                        actionId:
+                          type: string
+                        emphasis:
+                          type: string
+                        enabled:
+                          type: boolean
+                        kind:
+                          type: string
+                        label:
+                          type: string
+                        navigationTarget:
+                          additionalProperties: true
+                          type: object
+                        unavailableReason:
+                          nullable: true
+                          type: string
+                      type: object
+                    type: array
+                  -
+                    type: string
+              body_html:
+                description: '内容由管理端约束；body_text 缺省时从 HTML 派生纯文本'
+                type: string
+              body_text:
+                type: string
+              category:
+                enum:
+                  - announcement
+                  - personal_update
+                  - service_notice
+                type: string
+              expires_time:
+                description: '空字符串为不过期；否则格式 YYYY-MM-DD HH:mm:ss'
+                pattern: '^$|^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$'
+                type: string
+              necessity:
+                default: optional
+                enum:
+                  - optional
+                  - necessary
+                type: string
+              scope:
+                enum:
+                  - community
+                  - personal
+                type: string
+              summary_text:
+                maxLength: 320
+                type: string
+              target_email:
+                description: 'scope=personal 时必填且对应用户必须存在'
+                type: string
+              title:
+                maxLength: 240
+                minLength: 1
+                type: string
+            required:
+              - scope
+              - category
+              - title
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminNotificationCreated'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 发送站内通知
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/notifications/{batch}':
+  delete:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。物理删除整批通知；批次不存在返回400。'
+    operationId: adminNotificationDelete
+    parameters:
+      -
+        description: '通知批次 UUID'
+        in: path
+        name: batch
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminAffected'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 删除通知批次
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/notifications/{batch}/expire':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。按批置过期；不存在或全部已过期返回400。'
+    operationId: adminNotificationExpire
+    parameters:
+      -
+        description: '通知批次 UUID'
+        in: path
+        name: batch
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminAffected'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 撤回通知批次
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/plugin-options:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminPluginOptions
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminPluginBrief'
+                      type: array
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 在线插件选项
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/plugins:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminPluginIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: 非空时按状态筛选
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+            - draft
+            - online
+            - offline
+          type: string
+      -
+        description: 关键词，去除首尾空白后模糊搜索
+        in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminPluginListItem'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 插件目录列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminPluginCreate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              description_md:
+                type: string
+              latest_version:
+                type: string
+              name:
+                minLength: 1
+                type: string
+              slug:
+                maxLength: 32
+                minLength: 3
+                pattern: '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'
+                type: string
+              summary:
+                type: string
+            required:
+              - slug
+              - name
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminId'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 创建插件草稿
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/plugins/{id}':
+  put:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminPluginUpdate
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              description_md:
+                type: string
+              latest_version:
+                type: string
+              name:
+                type: string
+              summary:
+                type: string
+            type: object
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新插件资料
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/plugins/{id}/features':
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminPluginFeatures
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    has_bindings:
+                      type: boolean
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminPluginFeature'
+                      type: array
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 插件功能点列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminPluginFeatureCreate
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              default_enabled:
+                default: true
+                type: boolean
+              feature_key:
+                maxLength: 32
+                minLength: 2
+                pattern: '^[a-z0-9_]{2,32}$'
+                type: string
+              name:
+                minLength: 1
+                type: string
+            required:
+              - feature_key
+              - name
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminId'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 添加插件功能点
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/plugins/{id}/features/{fid}':
+  delete:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。插件已有绑定码时禁止删除；否则不存在的功能点也返回成功。'
+    operationId: adminPluginFeatureDelete
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      -
+        description: '记录 ID'
+        in: path
+        name: fid
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 删除插件功能点
+    tags:
+      - 平台管理端
+    x-audience: internal
+  put:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。已有绑定码时仅允许修改名称和默认开关，禁止改变 feature_key。'
+    operationId: adminPluginFeatureUpdate
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      -
+        description: '记录 ID'
+        in: path
+        name: fid
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              default_enabled:
+                type: boolean
+              feature_key:
+                description: 已有绑定码时禁止改变；更新路径没有创建时的格式校验
+                type: string
+              name:
+                type: string
+            type: object
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新插件功能点
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/plugins/{id}/status':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。清理持有该插件的全部空间缓存；offline 后全部绑定码校验拒绝。'
+    operationId: adminPluginStatus
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              status:
+                enum:
+                  - draft
+                  - online
+                  - offline
+                type: string
+            required:
+              - status
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新插件上下架状态
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/server-options:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminServerOptions
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminServerBrief'
+                      type: array
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 可用空间选项
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/servers:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminServerIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: 非空时按状态筛选
+        in: query
+        name: status
+        required: false
+        schema:
+          enum:
+            - active
+            - suspended
+            - closed
+          type: string
+      -
+        description: 关键词，去除首尾空白后模糊搜索
+        in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminServerListItem'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 空间列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。创建 active 空间，同时将指定 Owner 加入 owner 成员关系。'
+    operationId: adminServerCreate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              contact_qq:
+                type: string
+              description:
+                type: string
+              name:
+                minLength: 1
+                type: string
+              note:
+                type: string
+              owner_email:
+                description: 对应存在且未封禁的用户
+                type: string
+              slug:
+                maxLength: 32
+                minLength: 3
+                pattern: '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$'
+                type: string
+            required:
+              - name
+              - slug
+              - owner_email
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminId'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 创建空间
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/servers/{sid}':
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminServerDetail
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: sid
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminServerDetail'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 空间详情
+    tags:
+      - 平台管理端
+    x-audience: internal
+  put:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminServerUpdate
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: sid
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              contact_qq:
+                type: string
+              description:
+                type: string
+              logo:
+                type: string
+              name:
+                type: string
+              note:
+                type: string
+            type: object
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新空间资料
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/servers/{sid}/status':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。清空空间许可与权限缓存；暂停后其全部绑定码授权失效，恢复后生效。'
+    operationId: adminServerStatus
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: sid
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              status:
+                enum:
+                  - active
+                  - suspended
+                  - closed
+                type: string
+            required:
+              - status
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新空间状态
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/sso-requests:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。实时读取 Redis 短期请求，按 created_ago 降序，不分页。'
+    operationId: adminSsoIndex
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminSsoRequest'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 活跃设备及SSO请求列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/sso-requests/{deviceCode}/revoke':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。删除请求与反向索引；不存在或已过期返回404。'
+    operationId: adminSsoRevoke
+    parameters:
+      -
+        description: '设备请求 device_code'
+        in: path
+        name: deviceCode
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 撤销设备或SSO请求
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/tags:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminTagIndex
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminTagListItem'
+                      type: array
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 用户标签列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminTagCreate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              name:
+                maxLength: 32
+                minLength: 1
+                type: string
+              note:
+                type: string
+            required:
+              - name
+            type: object
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminId'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 创建用户标签
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/tags/{id}':
+  delete:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。删除标签并使其文档可见性引用失效。不存在的标签也返回成功。'
+    operationId: adminTagDelete
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 删除用户标签
+    tags:
+      - 平台管理端
+    x-audience: internal
+/api/admin/users:
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminUserIndex
+    parameters:
+      -
+        description: 页码，小于1按1处理
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      -
+        description: 每页数量，服务端裁剪到允许范围
+        in: query
+        name: page_size
+        required: false
+        schema:
+          default: 10
+          maximum: 50
+          minimum: 1
+          type: integer
+      -
+        description: 关键词，去除首尾空白后模糊搜索
+        in: query
+        name: keyword
+        required: false
+        schema:
+          type: string
+      -
+        description: 非空时按整数封禁标记筛选（0正常，1封禁）
+        in: query
+        name: ban
+        required: false
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        $ref: '../openapi.yaml#/components/schemas/AdminUser'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 用户列表
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/users/{id}':
+  get:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminUserDetail
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminUserDetail'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 用户详情
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/users/{id}/ban':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。不能封禁自己；操作超级管理员目标仅限超级管理员。封禁立即撤销该用户全部会话；拒绝分支返回400。'
+    operationId: adminUserBan
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              ban:
+                default: 1
+                description: 整数转换后等于1为封禁，其他值为解封；省略默认封禁
+                type: integer
+            type: object
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 封禁或解封用户
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/users/{id}/platform-role':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。授予 superadmin 仅超级管理员可操作，拒绝分支返回400；空角色清除平台权限。'
+    operationId: adminUserPlatformRole
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              role:
+                default: ''
+                description: '省略即清除角色；授予 superadmin 仅超级管理员可操作'
+                enum:
+                  - ''
+                  - ops
+                  - superadmin
+                type: string
+            type: object
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  description: '当前成功响应为空数组 []'
+                  items:
+                    type: string
+                  maxItems: 0
+                  type: array
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 设置平台角色
+    tags:
+      - 平台管理端
+    x-audience: internal
+'/api/admin/users/{id}/tags':
+  post:
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。'
+    operationId: adminTagSetUserTags
+    parameters:
+      -
+        description: '记录 ID'
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            properties:
+              tag_ids:
+                default: []
+                description: '全量替换；省略或非数组清空，无效 ID 被忽略'
+                items:
+                  type: integer
+                type: array
+            type: object
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              properties:
+                data:
+                  $ref: '../openapi.yaml#/components/schemas/AdminTagIds'
+                msg:
+                  description: 成功消息
+                  type: string
+              required:
+                - msg
+                - data
+              type: object
+        description: 操作成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 替换用户标签
+    tags:
+      - 平台管理端
+    x-audience: internal

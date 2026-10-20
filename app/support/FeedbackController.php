@@ -7,6 +7,7 @@ use app\common\model\FeedbackAttachmentModel;
 use app\common\model\FeedbackModel;
 use app\common\services\AuditService;
 use app\common\services\StorageService;
+use OpenApi\Attributes as OA;
 use support\Request;
 use support\Response;
 use Webman\Http\UploadFile;
@@ -23,7 +24,16 @@ use Webman\Http\UploadFile;
 class FeedbackController
 {
   /** 反馈 8 类型（与契约 kind 枚举一致） */
-  private const KINDS = ['bug', 'feature', 'asset', 'request', 'content', 'campaign', 'suggestion', 'complaint'];
+  private const KINDS = [
+    'bug',
+    'feature',
+    'asset',
+    'request',
+    'content',
+    'campaign',
+    'suggestion',
+    'complaint',
+  ];
 
   /** 标题/正文字节上限（契约 limits） */
   private const USER_CONTENT_BYTES = 65536;
@@ -31,13 +41,45 @@ class FeedbackController
   /**
    * 表单选项（本部署全类型可用, 无动态字段）
    */
+  #[OA\Get(
+    path: '/api/support/feedback/options',
+    operationId: 'feedbackOptions',
+    summary: '反馈表单选项及大小上限',
+    tags: ['反馈'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/FeedbackOptionsResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function options(Request $request): Response
   {
     return success([
       'available' => true,
       'reason' => null,
       'fields' => [],
-      'kinds' => array_map(fn ($k) => ['kind' => $k, 'available' => true, 'reason' => null], self::KINDS),
+      'kinds' => array_map(
+        fn($k) => ['kind' => $k, 'available' => true, 'reason' => null],
+        self::KINDS,
+      ),
       'actions' => [
         ['action' => 'add', 'available' => true, 'reason' => null],
         ['action' => 'modify', 'available' => true, 'reason' => null],
@@ -58,45 +100,128 @@ class FeedbackController
   /**
    * 提交反馈（prepare: 表单快照 + 附件声明; submissionKey 由客户端生成）
    */
+  #[OA\Post(
+    path: '/api/support/feedback/submissions',
+    operationId: 'feedbackPrepare',
+    summary: '创建或恢复反馈收取快照',
+    tags: ['反馈'],
+    security: [['sessionAuth' => []]],
+    description: '新建返回 201；同一恢复键重放返回 200。',
+    parameters: [
+      new OA\Parameter(
+        name: 'area',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(
+          type: 'string',
+          enum: ['development', 'community'],
+          default: 'development',
+          description: '未识别值回退 development',
+        ),
+      ),
+    ],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/FeedbackPrepareRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/FeedbackPrepareRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 201,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/FeedbackSnapshotResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 200,
+        description: '同一用户与恢复键已存在，返回原快照',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/FeedbackSnapshotResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 413,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function prepare(Request $request): Response
   {
     $post = $request->post();
-    if (empty($post) || hasMissingKeys($post, ["submissionKey", "form", "attachments"])) {
-      throw new ApiException("参数不匹配");
+    if (
+      empty($post) ||
+      hasMissingKeys($post, ['submissionKey', 'form', 'attachments'])
+    ) {
+      throw new ApiException('参数不匹配');
     }
 
     $submissionKey = (string) $post['submissionKey'];
     if (!self::isUuid($submissionKey)) {
-      throw new ApiException("submissionKey 非法");
+      throw new ApiException('submissionKey 非法');
     }
     // 幂等: 同 key 重复提交返回已有快照
-    $existing = FeedbackModel::where('submission_key', $submissionKey)->where('user_id', $request->uid)->first();
+    $existing = FeedbackModel::where('submission_key', $submissionKey)
+      ->where('user_id', $request->uid)
+      ->first();
     if ($existing) {
-      return success($this->snapshot($existing), "反馈已在收取中");
+      return success($this->snapshot($existing), '反馈已在收取中');
     }
 
     $form = $post['form'];
-    if (!is_array($form) || !in_array((string) ($form['kind'] ?? ''), self::KINDS, true)) {
-      throw new ApiException("反馈类型无效");
+    if (
+      !is_array($form) ||
+      !in_array((string) ($form['kind'] ?? ''), self::KINDS, true)
+    ) {
+      throw new ApiException('反馈类型无效');
     }
     $title = (string) ($form['title'] ?? '');
     if ($title === '' || mb_strlen($title) > 200) {
-      throw new ApiException("标题需为 1-200 个字符");
+      throw new ApiException('标题需为 1-200 个字符');
     }
     if (strlen(json_encode($form)) > self::USER_CONTENT_BYTES * 2) {
-      throw new ApiException("表单内容过大", 413);
+      throw new ApiException('表单内容过大', 413);
     }
 
     $attachments = (array) $post['attachments'];
     if (count($attachments) > 5) {
-      throw new ApiException("附件最多 5 个", 413);
+      throw new ApiException('附件最多 5 个', 413);
     }
 
     $row = new FeedbackModel();
     $row->uuid = self::uuid();
     $row->submission_key = $submissionKey;
-    $row->area = in_array((string) $request->get('area', 'development'), ['development', 'community'], true)
-      ? (string) $request->get('area', 'development') : 'development';
+    $row->area = in_array(
+      (string) $request->get('area', 'development'),
+      ['development', 'community'],
+      true,
+    )
+      ? (string) $request->get('area', 'development')
+      : 'development';
     $row->kind = (string) $form['kind'];
     $row->user_id = (int) $request->uid;
     $row->form = $form;
@@ -107,11 +232,21 @@ class FeedbackController
 
     $ordinal = 0;
     foreach ($attachments as $decl) {
-      if (!is_array($decl) || !isset($decl['originalName'], $decl['contentType'], $decl['byteLength'], $decl['sha256'])) {
+      if (
+        !is_array($decl) ||
+        !isset(
+          $decl['originalName'],
+          $decl['contentType'],
+          $decl['byteLength'],
+          $decl['sha256'],
+        )
+      ) {
         continue;
       }
       $att = new FeedbackAttachmentModel();
-      $att->uuid = self::isUuid((string) ($decl['id'] ?? '')) ? (string) $decl['id'] : self::uuid();
+      $att->uuid = self::isUuid((string) ($decl['id'] ?? ''))
+        ? (string) $decl['id']
+        : self::uuid();
       $att->submission_id = $row->id;
       $att->ordinal = $ordinal++;
       $att->original_name = mb_substr((string) $decl['originalName'], 0, 510);
@@ -128,18 +263,63 @@ class FeedbackController
       'detail' => ['kind' => $row->kind, 'attachments' => count($attachments)],
     ]);
 
-    return success($this->snapshot($row->refresh()), "反馈已受理")->withStatus(201);
+    return success($this->snapshot($row->refresh()), '反馈已受理')->withStatus(
+      201,
+    );
   }
 
   /**
    * 按恢复键查反馈
    */
+  #[OA\Get(
+    path: '/api/support/feedback/submissions/lookup',
+    operationId: 'feedbackLookup',
+    summary: '按恢复键查本人反馈',
+    tags: ['反馈'],
+    security: [['sessionAuth' => []]],
+    parameters: [
+      new OA\Parameter(
+        name: 'submissionKey',
+        in: 'query',
+        required: true,
+        schema: new OA\Schema(type: 'string'),
+      ),
+    ],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/FeedbackSnapshotResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 404,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function lookup(Request $request): Response
   {
     $key = (string) $request->get('submissionKey', '');
-    $row = FeedbackModel::where('submission_key', $key)->where('user_id', $request->uid)->first();
+    $row = FeedbackModel::where('submission_key', $key)
+      ->where('user_id', $request->uid)
+      ->first();
     if (!$row) {
-      throw new ApiException("反馈不存在", 404);
+      throw new ApiException('反馈不存在', 404);
     }
     return success($this->snapshot($row));
   }
@@ -147,11 +327,54 @@ class FeedbackController
   /**
    * 反馈详情
    */
+  #[OA\Get(
+    path: '/api/support/feedback/submissions/{submissionId}',
+    operationId: 'feedbackDetail',
+    summary: '本人反馈详情',
+    tags: ['反馈'],
+    security: [['sessionAuth' => []]],
+    parameters: [
+      new OA\Parameter(
+        name: 'submissionId',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string'),
+      ),
+    ],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/FeedbackSnapshotResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 404,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function detail(Request $request, string $submissionId): Response
   {
-    $row = FeedbackModel::where('uuid', $submissionId)->where('user_id', $request->uid)->first();
+    $row = FeedbackModel::where('uuid', $submissionId)
+      ->where('user_id', $request->uid)
+      ->first();
     if (!$row) {
-      throw new ApiException("反馈不存在", 404);
+      throw new ApiException('反馈不存在', 404);
     }
     return success($this->snapshot($row));
   }
@@ -159,40 +382,118 @@ class FeedbackController
   /**
    * 上传附件（multipart file 字段; sha256/大小须与声明一致）
    */
-  public function attachment_upload(Request $request, string $submissionId, string $attachmentId): Response
-  {
-    $row = FeedbackModel::where('uuid', $submissionId)->where('user_id', $request->uid)->first();
+  #[OA\Put(
+    path: '/api/support/feedback/submissions/{submissionId}/attachments/{attachmentId}',
+    operationId: 'feedbackUploadAttachment',
+    summary: '上传声明附件',
+    tags: ['反馈'],
+    security: [['sessionAuth' => []]],
+    description: '必须处于 receiving；同一已上传附件返回原快照。新上传字节大小与 SHA-256 必须匹配声明；成功递增 revision。',
+    parameters: [
+      new OA\Parameter(
+        name: 'submissionId',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string'),
+      ),
+      new OA\Parameter(
+        name: 'attachmentId',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string'),
+      ),
+    ],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\MediaType(
+          mediaType: 'multipart/form-data',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/FeedbackAttachmentUploadRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/FeedbackSnapshotResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 404,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 409,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 413,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/BusinessError',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
+  public function attachment_upload(
+    Request $request,
+    string $submissionId,
+    string $attachmentId,
+  ): Response {
+    $row = FeedbackModel::where('uuid', $submissionId)
+      ->where('user_id', $request->uid)
+      ->first();
     if (!$row) {
-      throw new ApiException("反馈不存在", 404);
+      throw new ApiException('反馈不存在', 404);
     }
     if ($row->status !== 'receiving') {
-      throw new ApiException("反馈已完成, 不能再上传附件", 409);
+      throw new ApiException('反馈已完成, 不能再上传附件', 409);
     }
-    $att = FeedbackAttachmentModel::where('uuid', $attachmentId)->where('submission_id', $row->id)->first();
+    $att = FeedbackAttachmentModel::where('uuid', $attachmentId)
+      ->where('submission_id', $row->id)
+      ->first();
     if (!$att) {
-      throw new ApiException("附件声明不存在", 404);
+      throw new ApiException('附件声明不存在', 404);
     }
     if ($att->status === 'uploaded') {
-      return success($this->snapshot($row), "附件已上传");
+      return success($this->snapshot($row), '附件已上传');
     }
 
     $file = $request->file('file');
-    if (!$file instanceof UploadFile || !$file->isValid()) {
-      throw new ApiException("缺少 file 文件部分");
+    if (!($file instanceof UploadFile) || !$file->isValid()) {
+      throw new ApiException('缺少 file 文件部分');
     }
     if ($file->getSize() > StorageService::MAX_BYTES) {
-      throw new ApiException("附件超过大小上限", 413);
+      throw new ApiException('附件超过大小上限', 413);
     }
     $bytes = file_get_contents($file->getRealPath());
     if ($bytes === false) {
-      throw new ApiException("附件读取失败, 请重试", 503);
+      throw new ApiException('附件读取失败, 请重试', 503);
     }
     $actualHash = hash('sha256', $bytes);
     if ($actualHash !== $att->sha256) {
-      throw new ApiException("附件内容与声明不一致, 请重试", 409);
+      throw new ApiException('附件内容与声明不一致, 请重试', 409);
     }
     if (strlen($bytes) !== (int) $att->byte_length) {
-      throw new ApiException("附件大小与声明不一致, 请重试", 409);
+      throw new ApiException('附件大小与声明不一致, 请重试', 409);
     }
 
     // 原始文件名仅保留在元数据中，磁盘使用固定名称，兼容中文、空格及大写扩展名并避免执行上传脚本。
@@ -211,24 +512,90 @@ class FeedbackController
   /**
    * 推进（continue: 完成提交; retry: 失败重试重新开放收取）
    */
+  #[OA\Post(
+    path: '/api/support/feedback/submissions/{submissionId}/advance',
+    operationId: 'feedbackAdvance',
+    summary: '按修订号推进反馈',
+    tags: ['反馈'],
+    security: [['sessionAuth' => []]],
+    description: 'continue 要求全部附件到位并完成反馈；retry 返回当前快照；expectedRevision 不匹配返回 409。',
+    parameters: [
+      new OA\Parameter(
+        name: 'submissionId',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string'),
+      ),
+    ],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/FeedbackAdvanceRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/FeedbackAdvanceRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/FeedbackSnapshotResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 404,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 409,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function advance(Request $request, string $submissionId): Response
   {
     $post = $request->post();
-    if (empty($post) || hasMissingKeys($post, ["expectedRevision", "intent"])) {
-      throw new ApiException("参数不匹配");
+    if (empty($post) || hasMissingKeys($post, ['expectedRevision', 'intent'])) {
+      throw new ApiException('参数不匹配');
     }
-    $row = FeedbackModel::where('uuid', $submissionId)->where('user_id', $request->uid)->first();
+    $row = FeedbackModel::where('uuid', $submissionId)
+      ->where('user_id', $request->uid)
+      ->first();
     if (!$row) {
-      throw new ApiException("反馈不存在", 404);
+      throw new ApiException('反馈不存在', 404);
     }
     if ((int) $row->revision !== (int) $post['expectedRevision']) {
-      throw new ApiException("反馈状态已变化, 请刷新后重试", 409);
+      throw new ApiException('反馈状态已变化, 请刷新后重试', 409);
     }
 
     $intent = (string) $post['intent'];
     if ($intent === 'continue') {
       // 附件必须全部到位
-      $missing = FeedbackAttachmentModel::where('submission_id', $row->id)->where('status', 'expected')->count();
+      $missing = FeedbackAttachmentModel::where('submission_id', $row->id)
+        ->where('status', 'expected')
+        ->count();
       if ($missing > 0) {
         throw new ApiException("还有 {$missing} 个附件未上传");
       }
@@ -243,7 +610,7 @@ class FeedbackController
     } elseif ($intent === 'retry') {
       // receiving 保持不变, 重新返回当前快照（客户端据此续传）
     } else {
-      throw new ApiException("intent 只支持 continue/retry");
+      throw new ApiException('intent 只支持 continue/retry');
     }
 
     return success($this->snapshot($row));
@@ -256,7 +623,9 @@ class FeedbackController
    */
   private function snapshot(FeedbackModel $row): array
   {
-    $atts = FeedbackAttachmentModel::where('submission_id', $row->id)->orderBy('ordinal')->get();
+    $atts = FeedbackAttachmentModel::where('submission_id', $row->id)
+      ->orderBy('ordinal')
+      ->get();
     $pendingCount = $atts->where('status', 'expected')->count();
     $completed = $row->status === 'completed';
 
@@ -266,22 +635,32 @@ class FeedbackController
       'revision' => (int) $row->revision,
       'form' => $row->form,
       'createdAt' => strtotime((string) $row->created_time) ?: 0,
-      'receiveExpiresAt' => $row->receive_expires_at ? (strtotime((string) $row->receive_expires_at) ?: 0) : 0,
+      'receiveExpiresAt' => $row->receive_expires_at
+        ? (strtotime((string) $row->receive_expires_at) ?:
+        0)
+        : 0,
       'status' => $completed ? 'completed' : 'receiving',
-      'nextAction' => $completed ? 'done' : ($pendingCount > 0 ? 'upload' : 'continue'),
+      'nextAction' => $completed
+        ? 'done'
+        : ($pendingCount > 0
+          ? 'upload'
+          : 'continue'),
       'taskId' => null,
       'taskUrl' => null,
       'failure' => null,
-      'attachments' => array_map(fn ($a) => [
-        'id' => $a->uuid,
-        'ordinal' => (int) $a->ordinal,
-        'originalName' => $a->original_name,
-        'contentType' => $a->content_type,
-        'byteLength' => (int) $a->byte_length,
-        'sha256' => $a->sha256,
-        'status' => $a->status,
-        'remoteAttachmentId' => null,
-      ], $atts->all()),
+      'attachments' => array_map(
+        fn($a) => [
+          'id' => $a->uuid,
+          'ordinal' => (int) $a->ordinal,
+          'originalName' => $a->original_name,
+          'contentType' => $a->content_type,
+          'byteLength' => (int) $a->byte_length,
+          'sha256' => $a->sha256,
+          'status' => $a->status,
+          'remoteAttachmentId' => null,
+        ],
+        $atts->all(),
+      ),
     ];
   }
 
@@ -295,6 +674,9 @@ class FeedbackController
 
   private static function isUuid(string $value): bool
   {
-    return (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $value);
+    return (bool) preg_match(
+      '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
+      $value,
+    );
   }
 }

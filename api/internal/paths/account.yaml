@@ -1,0 +1,685 @@
+/api/account/grants:
+  get:
+    description: 我授权过的应用列表
+    operationId: accountGrants
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountGrantsResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 查看本人第三方授权
+    tags:
+      - 账号
+    x-audience: internal
+'/api/account/grants/{client_id}/revoke':
+  post:
+    description: '撤销对某应用的授权（该应用名下我的 token 立即失效）'
+    operationId: accountRevokeGrant
+    parameters:
+      -
+        in: path
+        name: client_id
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountRevokedSessionsResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 撤销授权及关联会话
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/login:
+  post:
+    description: '图片验证码五分钟有效且一次性；此路径必填 captcha。'
+    operationId: accountLogin
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountAdminLoginRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountAdminLoginRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountLoginResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '422':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 登录并创建独立会话
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/logout:
+  post:
+    description: '登出（撤销当前会话, token 立即失效）'
+    operationId: accountLogout
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountEmptyResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 撤销当前会话
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/me:
+  get:
+    description: 当前登录用户信息
+    operationId: accountMe
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 当前登录用户
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/password:
+  post:
+    description: 修改密码（成功后下线其他全部设备）
+    operationId: accountChangePassword
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountPasswordRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountPasswordRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountRevokedSessionsResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 修改密码并下线其他设备
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/register:
+  post:
+    description: '若邮箱已发送验证码则必须匹配 code；未发送时当前实现放行。密码至少六字节。'
+    operationId: accountRegister
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountRegisterRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountRegisterRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountLoginResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 注册并自动登录
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/send-email-code:
+  post:
+    description: '同邮箱冷却六十秒，验证码十分钟有效。邮件失败且 debug 开启时返回 debug_code。'
+    operationId: accountSendEmailCode
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountEmailCodeResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '500':
+        content:
+          text/html:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountUnhandledErrorBody'
+        description: '注解限流异常由现有 ApiHandler 转成 500'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 发送注册邮箱验证码
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/sessions:
+  get:
+    description: 我的登录会话列表（多设备/多平台）
+    operationId: accountSessions
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountSessionsResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 最近一百条登录会话
+    tags:
+      - 账号
+    x-audience: internal
+/api/account/sessions/revoke-all:
+  post:
+    description: 下线除当前会话外的全部设备
+    operationId: accountRevokeOtherSessions
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountRevokeAllResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 撤销除当前以外所有会话
+    tags:
+      - 账号
+    x-audience: internal
+'/api/account/sessions/{sid}/revoke':
+  post:
+    description: 撤销指定会话（下线某设备）
+    operationId: accountRevokeSession
+    parameters:
+      -
+        in: path
+        name: sid
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountEmptyResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 撤销本人指定会话
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/captcha/challenges:
+  post:
+    description: '五分钟有效；返回 PNG base64 字节，无 data: 前缀。'
+    operationId: authCaptchaChallenge
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountCaptchaResponse'
+        description: 成功
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '500':
+        content:
+          text/html:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountUnhandledErrorBody'
+        description: '注解限流异常由现有 ApiHandler 转成 500'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 创建一次性图片验证码
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/invitations/check:
+  post:
+    description: 资格检查（未注册邮箱即符合邀请条件）
+    operationId: authInvitationCheck
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountInvitationCheckResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '409':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 检查邀请注册资格
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/invitations/code:
+  post:
+    description: '验证码十分钟有效，发送冷却六十秒；429 响应带 Retry-After 秒数。'
+    operationId: authInvitationCode
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+      required: true
+    responses:
+      '202':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountInvitationCodeResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '409':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '429':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 发送冷却或连续失败锁定
+        headers:
+          Retry-After:
+            description: 剩余等待秒数
+            schema:
+              type: integer
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 发送邀请码
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/invitations/complete:
+  post:
+    description: '成功后不自动登录；完成令牌过期或已消费返回 401。'
+    operationId: authInvitationComplete
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountInvitationCompleteRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountInvitationCompleteRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountInvitationCompleteResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '409':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 消费完成令牌并注册账号
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/invitations/verify:
+  post:
+    description: '验证码一次性消费后颁发十分钟一次性完成令牌；连续失败锁定时 429 带 Retry-After 秒数。'
+    operationId: authInvitationVerify
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountInvitationVerifyRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountInvitationVerifyRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountInvitationVerifyResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '422':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '429':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 发送冷却或连续失败锁定
+        headers:
+          Retry-After:
+            description: 剩余等待秒数
+            schema:
+              type: integer
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 一次性消费邀请码并签发完成令牌
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/login:
+  post:
+    description: 'captcha 可选；提供后进行一次性校验。'
+    operationId: authLogin
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountLoginRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountLoginRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountLoginResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '422':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 登录并创建独立会话
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/logout:
+  post:
+    operationId: authLogout
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountEmptyResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 撤销当前会话
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/me:
+  get:
+    operationId: authMe
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 当前登录用户
+    tags:
+      - 账号
+    x-audience: internal
+  patch:
+    description: "更新当前用户资料（用户侧网站对接, PATCH /api/auth/me）\n支持: nickname(显示名) / qq(可 null 清空) / avatar(null 清除头像恢复默认)\nfivemId 不允许在此设置——游戏身份必须走绑定码/SSO 绑定流程"
+    operationId: authUpdateProfile
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountProfileRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountProfileRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: '更新昵称、QQ 或清除头像'
+    tags:
+      - 账号
+    x-audience: internal
+/api/auth/me/avatar:
+  post:
+    description: '上传头像（用户侧网站对接, base64 图片统一转 WebP 存储）'
+    operationId: authUploadAvatar
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountAvatarRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/AccountAvatarRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '413':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: '上传头像并转换为 WebP'
+    tags:
+      - 账号
+    x-audience: internal
+'/api/avatars/{avatarId}':
+  get:
+    description: '读取头像图片（公开, /api/avatars/{avatarId}）'
+    operationId: accountAvatarImage
+    parameters:
+      -
+        in: path
+        name: avatarId
+        required: true
+        schema:
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          type: string
+    responses:
+      '200':
+        content:
+          image/webp:
+            schema:
+              format: binary
+              type: string
+        description: 'WebP 图片字节'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: '读取 WebP 头像'
+    tags:
+      - 账号
+    x-audience: internal

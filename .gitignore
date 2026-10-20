@@ -3,6 +3,7 @@
 /.idea
 /.vscode
 /vendor
+/node_modules
 *.log
 .env
 /install.lock

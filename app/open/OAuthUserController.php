@@ -2,6 +2,8 @@
 
 namespace app\open;
 
+use OpenApi\Attributes as OA;
+
 use app\common\exception\ApiException;
 use app\common\model\ServerMemberModel;
 use app\common\model\UserIdentModel;
@@ -25,11 +27,51 @@ class OAuthUserController
   /**
    * 用户信息（scope 硬过滤）
    */
+  #[OA\Get(
+    path: '/api/open/userinfo',
+    operationId: 'getOAuthUserInfo',
+    summary: '获取 OAuth 用户信息',
+    description: 'Bearer 必须对应有效 OAuth 会话、有效应用和未撤销授权。基础字段始终返回；email、idents、servers、perms 分别受 user.email、idents.read、servers.read、perms.read scope 控制。',
+    tags: ['OAuth 用户资源'],
+    security: [['oauthBearer' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '操作成功。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/PluginOAuthUserInfoResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/BusinessErrorBody',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/BusinessErrorBody',
+        ),
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'public'],
+  )]
   public function userinfo(Request $request): Response
   {
     $user = UserModel::find($request->oauth_user_id);
     if (!$user) {
-      throw new ApiException("用户不存在");
+      throw new ApiException('用户不存在');
     }
     $scopes = (array) $request->oauth_scopes;
 
@@ -46,7 +88,7 @@ class OAuthUserController
     if (in_array('idents.read', $scopes, true)) {
       $data['idents'] = UserIdentModel::where('user_id', $user->id)
         ->get(['ident_type', 'ident_value'])
-        ->map(fn ($r) => ['type' => $r->ident_type, 'value' => $r->ident_value])
+        ->map(fn($r) => ['type' => $r->ident_type, 'value' => $r->ident_value])
         ->all();
     }
 
@@ -55,7 +97,13 @@ class OAuthUserController
         ->where('status', 'active')
         ->with('server:id,name,slug')
         ->get()
-        ->map(fn ($r) => ['name' => $r->server?->name, 'slug' => $r->server?->slug, 'role' => $r->role_key])
+        ->map(
+          fn($r) => [
+            'name' => $r->server?->name,
+            'slug' => $r->server?->slug,
+            'role' => $r->role_key,
+          ],
+        )
         ->all();
     }
 
@@ -67,7 +115,10 @@ class OAuthUserController
         ->with('server:id,slug')
         ->get();
       foreach ($memberships as $m) {
-        $bindings = \app\common\model\PluginBindingModel::where('server_id', $m->server_id)
+        $bindings = \app\common\model\PluginBindingModel::where(
+          'server_id',
+          $m->server_id,
+        )
           ->with('plugin:id,slug')
           ->where('status', 'active')
           ->get();
@@ -75,7 +126,11 @@ class OAuthUserController
           if (!$b->plugin) {
             continue;
           }
-          $perm = PermService::canUse((int) $user->id, (int) $m->server_id, (string) $b->plugin->slug);
+          $perm = PermService::canUse(
+            (int) $user->id,
+            (int) $m->server_id,
+            (string) $b->plugin->slug,
+          );
           if ($perm !== null) {
             $perms[] = [
               'server' => $m->server?->slug,
@@ -96,36 +151,104 @@ class OAuthUserController
    * 玩家自绑定（插件拿到用户令牌后调用: 把当前游戏 ident 绑到该用户;
    * 插件类应用自动让用户加入归属空间）
    */
+  #[OA\Post(
+    path: '/api/open/ident/bind-self',
+    operationId: 'bindOAuthGameIdentity',
+    summary: '绑定当前 OAuth 用户游戏标识',
+    description: '需要 idents.read scope（缺少时为 400）；已绑定其他账号或空间成员被封禁为 400。插件类应用会把新绑定用户加入所属空间；标识已属于当前账号时返回 data: [] 与重复绑定提示。',
+    tags: ['OAuth 用户资源'],
+    security: [['oauthBearer' => []]],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\MediaType(
+          mediaType: 'application/json',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/PluginBindSelfRequest',
+          ),
+        ),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/PluginBindSelfRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '操作成功。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/PluginBindSelfResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/BusinessErrorBody',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/BusinessErrorBody',
+        ),
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'public'],
+  )]
   public function bind_self(Request $request): Response
   {
     $scopes = (array) $request->oauth_scopes;
     if (!in_array('idents.read', $scopes, true)) {
-      throw new ApiException("缺少 idents.read 权限");
+      throw new ApiException('缺少 idents.read 权限');
     }
 
     $ident = trim((string) $request->post('ident', ''));
-    $identType = (string) ($request->post('ident_type', 'fivem_license') ?? 'fivem_license');
-    if ($ident === '' || !in_array($identType, ['fivem_license', 'steam', 'discord', 'qq'], true)) {
-      throw new ApiException("ident 必填, ident_type 为 fivem_license/steam/discord/qq");
+    $identType =
+      (string) ($request->post('ident_type', 'fivem_license') ??
+        'fivem_license');
+    if (
+      $ident === '' ||
+      !in_array($identType, ['fivem_license', 'steam', 'discord', 'qq'], true)
+    ) {
+      throw new ApiException(
+        'ident 必填, ident_type 为 fivem_license/steam/discord/qq',
+      );
     }
 
     $uid = (int) $request->oauth_user_id;
 
-    $exists = UserIdentModel::where('ident_type', $identType)->where('ident_value', $ident)->first();
+    $exists = UserIdentModel::where('ident_type', $identType)
+      ->where('ident_value', $ident)
+      ->first();
     if ($exists) {
       if ((int) $exists->user_id === $uid) {
-        return success([], "已绑定当前账号, 无需重复绑定");
+        return success([], '已绑定当前账号, 无需重复绑定');
       }
-      throw new ApiException("该游戏标识已绑定其他账号");
+      throw new ApiException('该游戏标识已绑定其他账号');
     }
 
     // 插件类应用: 自动加入归属空间
     $client = $request->oauth_client;
     $joinServerId = null;
     if ($client && $client->type === 'plugin' && $client->server_id) {
-      $member = ServerMemberModel::where('server_id', $client->server_id)->where('user_id', $uid)->first();
+      $member = ServerMemberModel::where('server_id', $client->server_id)
+        ->where('user_id', $uid)
+        ->first();
       if ($member && $member->status === 'banned') {
-        throw new ApiException("你已被该服务器空间禁用, 无法绑定");
+        throw new ApiException('你已被该服务器空间禁用, 无法绑定');
       }
       if (!$member) {
         $member = new ServerMemberModel();
@@ -153,12 +276,18 @@ class OAuthUserController
       'client_id' => $client?->client_id,
       'target_type' => 'ident',
       'target_id' => $row->id,
-      'detail' => ['channel' => 'sso_bind_self', 'ident' => '...' . substr($ident, -8)],
+      'detail' => [
+        'channel' => 'sso_bind_self',
+        'ident' => '...' . substr($ident, -8),
+      ],
     ]);
 
-    return success([
-      'ident_tail' => '...' . substr($ident, -8),
-      'joined_server' => (bool) $joinServerId,
-    ], "绑定成功");
+    return success(
+      [
+        'ident_tail' => '...' . substr($ident, -8),
+        'joined_server' => (bool) $joinServerId,
+      ],
+      '绑定成功',
+    );
   }
 }

@@ -2,6 +2,8 @@
 
 FiveM 服务端 Lua SDK，为接入 EXRE 社区平台的插件提供：许可校验与心跳、离线宽限、成员权限同步、玩家绑定码、功能闸门。
 
+HTTP 路径、请求、响应与鉴权见本 PHP 仓库的 `api/public/openapi.yaml`，并沿相对引用查阅模块文件；导入工具可使用完整单文件 `api/generated/openapi.public.yaml`。它们均从 PHP 接口定义生成。分发模块化版本时需携带完整 `api/public/` 目录；修改插件接口时同步核对本 SDK 的请求和响应处理。
+
 ## 接入方式
 
 1. 把本目录复制为服务器的 `resources/[exre]/excore` 资源（或作为子目录并入你的插件资源，把 `excore.lua` 加进 `server_scripts`）。

@@ -16,6 +16,7 @@ use app\common\services\SessionService;
 
 use support\Redis;
 use support\limiter\annotation\Limit;
+use OpenApi\Attributes as OA;
 use support\Request;
 use support\Response;
 
@@ -28,32 +29,85 @@ class AccountController
    * 不需要登录验证的方法
    * @var string[]
    */
-  protected $noNeedLogin = ['login', 'register', 'send_email_code', 'avatar_image',
-    'invitation_check', 'invitation_code', 'invitation_verify', 'invitation_complete', 'captcha_challenge'];
+  protected $noNeedLogin = [
+    'login',
+    'register',
+    'send_email_code',
+    'avatar_image',
+    'invitation_check',
+    'invitation_code',
+    'invitation_verify',
+    'invitation_complete',
+    'captcha_challenge',
+  ];
 
   /**
    * 注册（bcrypt 密码, 注册即登录）
    */
+  #[OA\Post(
+    path: '/api/account/register',
+    operationId: 'accountRegister',
+    summary: '注册并自动登录',
+    tags: ['账号'],
+    security: [],
+    description: '若邮箱已发送验证码则必须匹配 code；未发送时当前实现放行。密码至少六字节。',
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountRegisterRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountRegisterRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountLoginResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function register(Request $request): Response
   {
     $post = $request->post();
-    if (empty($post) || hasMissingKeys($post, ["email", "password"])) {
-      throw new ApiException("参数不匹配");
+    if (empty($post) || hasMissingKeys($post, ['email', 'password'])) {
+      throw new ApiException('参数不匹配');
     }
 
     $email = trim((string) $request->post('email'));
     $password = (string) $request->post('password');
-    $username = trim((string) ($request->post('username') ?: strtok($email, '@')));
+    $username = trim(
+      (string) ($request->post('username') ?: strtok($email, '@')),
+    );
     $qq = trim((string) $request->post('qq', ''));
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      throw new ApiException("邮箱格式不正确");
+      throw new ApiException('邮箱格式不正确');
     }
     if (strlen($password) < 6) {
-      throw new ApiException("密码至少6位");
+      throw new ApiException('密码至少6位');
     }
     if ($qq !== '' && !ctype_digit($qq)) {
-      throw new ApiException("QQ必须是纯数字");
+      throw new ApiException('QQ必须是纯数字');
     }
 
     // 邮箱验证码: 发送过的邮箱必须校验（未发送的过渡期放行, 正式上线改为强制）
@@ -61,17 +115,17 @@ class AccountController
     if ($cachedCode !== null) {
       $code = trim((string) $request->post('code', ''));
       if ($code === '' || $code !== $cachedCode) {
-        throw new ApiException("校验码不匹配或已过期");
+        throw new ApiException('校验码不匹配或已过期');
       }
       Redis::del("email_code:{$email}");
     }
 
     // 唯一性（并发兜底靠 UNIQUE 索引, 这里给友好报错）
     if (UserModel::where('email', $email)->first()) {
-      throw new ApiException("邮箱已被注册");
+      throw new ApiException('邮箱已被注册');
     }
     if ($qq !== '' && UserModel::where('qq', $qq)->first()) {
-      throw new ApiException("QQ已被绑定");
+      throw new ApiException('QQ已被绑定');
     }
 
     $user = new UserModel();
@@ -92,17 +146,20 @@ class AccountController
       'target_id' => $user->id,
     ]);
 
-    return success([
-      'token' => $session['token'],
-      'expires_in' => $session['expires_in'],
-      'user' => [
-        'id' => (int) $user->id,
-        'email' => $user->email,
-        'username' => $user->username,
-        'avatar' => $user->avatar,
-        'platform_role' => $user->platform_role,
+    return success(
+      [
+        'token' => $session['token'],
+        'expires_in' => $session['expires_in'],
+        'user' => [
+          'id' => (int) $user->id,
+          'email' => $user->email,
+          'username' => $user->username,
+          'avatar' => $user->avatar,
+          'platform_role' => $user->platform_role,
+        ],
       ],
-    ], "注册成功");
+      '注册成功',
+    );
   }
 
   /**
@@ -110,11 +167,63 @@ class AccountController
    * 同邮箱 60 秒冷却; 验证码 10 分钟有效; debug 模式下发送失败会回传 debug_code 供联调
    */
   #[Limit(limit: 5, ttl: 60, message: '发送过于频繁,请稍后再试!')]
+  #[OA\Post(
+    path: '/api/account/send-email-code',
+    operationId: 'accountSendEmailCode',
+    summary: '发送注册邮箱验证码',
+    tags: ['账号'],
+    security: [],
+    description: '同邮箱冷却六十秒，验证码十分钟有效。邮件失败且 debug 开启时返回 debug_code。',
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountEmailRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountEmailRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountEmailCodeResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 500,
+        description: '注解限流异常由现有 ApiHandler 转成 500',
+        content: new OA\MediaType(
+          mediaType: 'text/html',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountUnhandledErrorBody',
+          ),
+        ),
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function send_email_code(Request $request): Response
   {
     $email = trim((string) $request->post('email', ''));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      throw new ApiException("邮箱格式不正确");
+      throw new ApiException('邮箱格式不正确');
     }
 
     $cooldownKey = "email_code_cd:{$email}";
@@ -130,7 +239,7 @@ class AccountController
     $sent = Email::send(
       $email,
       'EXRE 社区注册验证码',
-      "你的验证码是 {$code}，10 分钟内有效。如非本人操作请忽略本邮件。"
+      "你的验证码是 {$code}，10 分钟内有效。如非本人操作请忽略本邮件。",
     );
 
     AuditService::log(null, 'user', 'user.email_code', [
@@ -142,38 +251,138 @@ class AccountController
     if (!$sent) {
       if (config('app.debug')) {
         // 本地未配置 SMTP 时联调用
-        return success(['debug_code' => $code], "邮件发送失败(未配置SMTP?), debug 模式直接返回验证码");
+        return success(
+          ['debug_code' => $code],
+          '邮件发送失败(未配置SMTP?), debug 模式直接返回验证码',
+        );
       }
-      throw new ApiException("邮件发送失败,请稍后再试或联系管理员");
+      throw new ApiException('邮件发送失败,请稍后再试或联系管理员');
     }
-    return success([], "验证码已发送至邮箱, 10 分钟内有效");
+    return success([], '验证码已发送至邮箱, 10 分钟内有效');
   }
 
   /**
    * 登录（每次登录创建独立会话, 多设备并存）
    * 可选图片验证码: 请求带 captcha {challengeId, answer} 时校验（用户侧网站登录流）
    */
+  #[OA\Post(
+    path: '/api/account/login',
+    operationId: 'accountLogin',
+    summary: '登录并创建独立会话',
+    tags: ['账号'],
+    security: [],
+    description: '图片验证码五分钟有效且一次性；此路径必填 captcha。',
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(
+          ref: '#/components/schemas/AccountAdminLoginRequest',
+        ),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountAdminLoginRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountLoginResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 422,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
+  #[OA\Post(
+    path: '/api/auth/login',
+    operationId: 'authLogin',
+    summary: '登录并创建独立会话',
+    tags: ['账号'],
+    security: [],
+    description: 'captcha 可选；提供后进行一次性校验。',
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountLoginRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountLoginRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountLoginResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 422,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function login(Request $request): Response
   {
     $email = trim((string) $request->post('email'));
     $password = (string) $request->post('password');
 
     if ($email === '' || $password === '') {
-      throw new ApiException("邮箱或密码不能为空");
+      throw new ApiException('邮箱或密码不能为空');
     }
     // 图片验证码（422 = 验证码错误, 前端与凭据错误 400 区分展示）
     // 管理端登录（/api/account/login）必填; 用户侧（/api/auth/login）带则校验
     $captchaRequired = str_starts_with($request->path(), '/api/account/');
-    CaptchaService::checkFromRequest($request->post('captcha'), $captchaRequired);
+    CaptchaService::checkFromRequest(
+      $request->post('captcha'),
+      $captchaRequired,
+    );
 
     $user = UserModel::where('email', $email)->first();
     // 统一报错, 不泄露"账号不存在"
     if (!$user || !password_verify($password, (string) $user->password_hash)) {
-      throw new ApiException("邮箱或密码错误");
+      throw new ApiException('邮箱或密码错误');
     }
     if ((int) $user->ban !== 0) {
       // 403: 身份有效但被拒（封禁），与管理端拦截器及用户侧错误映射约定一致
-      throw new ApiException("当前账户已经被禁用", 403);
+      throw new ApiException('当前账户已经被禁用', 403);
     }
 
     $user->last_login_time = date('Y-m-d H:i:s');
@@ -187,7 +396,11 @@ class AccountController
     AuditService::log((int) $user->id, 'user', 'user.login', [
       'target_type' => 'session',
       'target_id' => $session['sid'],
-      'detail' => ['device' => SessionService::deviceNameFromUa((string) $request->header('user-agent', ''))],
+      'detail' => [
+        'device' => SessionService::deviceNameFromUa(
+          (string) $request->header('user-agent', ''),
+        ),
+      ],
     ]);
 
     return success([
@@ -206,6 +419,64 @@ class AccountController
   /**
    * 登出（撤销当前会话, token 立即失效）
    */
+  #[OA\Post(
+    path: '/api/account/logout',
+    operationId: 'accountLogout',
+    summary: '撤销当前会话',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountEmptyResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
+  #[OA\Post(
+    path: '/api/auth/logout',
+    operationId: 'authLogout',
+    summary: '撤销当前会话',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountEmptyResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function logout(Request $request): Response
   {
     $sid = (int) ($request->sid ?? 0);
@@ -216,17 +487,75 @@ class AccountController
         'target_id' => $sid,
       ]);
     }
-    return success([], "已退出登录");
+    return success([], '已退出登录');
   }
 
   /**
    * 当前登录用户信息
    */
+  #[OA\Get(
+    path: '/api/account/me',
+    operationId: 'accountMe',
+    summary: '当前登录用户',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountMeResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
+  #[OA\Get(
+    path: '/api/auth/me',
+    operationId: 'authMe',
+    summary: '当前登录用户',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountMeResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function me(Request $request): Response
   {
     $user = UserModel::find($request->uid);
     if (!$user) {
-      throw new ApiException("用户不存在", 401);
+      throw new ApiException('用户不存在', 401);
     }
     return success($this->mePayload($user));
   }
@@ -236,21 +565,66 @@ class AccountController
    * 支持: nickname(显示名) / qq(可 null 清空) / avatar(null 清除头像恢复默认)
    * fivemId 不允许在此设置——游戏身份必须走绑定码/SSO 绑定流程
    */
+  #[OA\Patch(
+    path: '/api/auth/me',
+    operationId: 'authUpdateProfile',
+    summary: '更新昵称、QQ 或清除头像',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountProfileRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountProfileRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountMeResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function profile_update(Request $request): Response
   {
     $post = $request->post();
     if (empty($post)) {
-      throw new ApiException("参数不匹配");
+      throw new ApiException('参数不匹配');
     }
     $user = UserModel::find($request->uid);
     if (!$user) {
-      throw new ApiException("用户不存在", 401);
+      throw new ApiException('用户不存在', 401);
     }
 
     if (array_key_exists('nickname', $post)) {
       $nickname = trim((string) $post['nickname']);
       if ($nickname === '' || mb_strlen($nickname) > 32) {
-        throw new ApiException("用户名需为 1-32 个字符");
+        throw new ApiException('用户名需为 1-32 个字符');
       }
       $user->username = $nickname;
     }
@@ -259,10 +633,12 @@ class AccountController
       $qq = $post['qq'] === null ? '' : trim((string) $post['qq']);
       if ($qq !== '') {
         if (!ctype_digit($qq) || strlen($qq) > 20) {
-          throw new ApiException("QQ必须是纯数字");
+          throw new ApiException('QQ必须是纯数字');
         }
-        if (UserModel::where('qq', $qq)->where('id', '<>', $user->id)->first()) {
-          throw new ApiException("QQ已被其他账号绑定");
+        if (
+          UserModel::where('qq', $qq)->where('id', '<>', $user->id)->first()
+        ) {
+          throw new ApiException('QQ已被其他账号绑定');
         }
         $user->qq = $qq;
       } else {
@@ -271,7 +647,7 @@ class AccountController
     }
 
     if (array_key_exists('fivemId', $post) && $post['fivemId'] !== null) {
-      throw new ApiException("游戏身份请通过游戏内绑定流程完成, 无法直接填写");
+      throw new ApiException('游戏身份请通过游戏内绑定流程完成, 无法直接填写');
     }
 
     if (array_key_exists('avatar', $post) && $post['avatar'] === null) {
@@ -291,27 +667,78 @@ class AccountController
   /**
    * 上传头像（用户侧网站对接, base64 图片统一转 WebP 存储）
    */
+  #[OA\Post(
+    path: '/api/auth/me/avatar',
+    operationId: 'authUploadAvatar',
+    summary: '上传头像并转换为 WebP',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountAvatarRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountAvatarRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountMeResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 413,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function avatar_upload(Request $request): Response
   {
     $post = $request->post();
-    if (empty($post) || hasMissingKeys($post, ["imageBase64", "mediaType"])) {
-      throw new ApiException("参数不匹配");
+    if (empty($post) || hasMissingKeys($post, ['imageBase64', 'mediaType'])) {
+      throw new ApiException('参数不匹配');
     }
     $mediaType = (string) $post['mediaType'];
-    if (!in_array($mediaType, ['image/png', 'image/jpeg', 'image/webp'], true)) {
-      throw new ApiException("仅支持 PNG、JPEG 或 WebP 图片");
+    if (
+      !in_array($mediaType, ['image/png', 'image/jpeg', 'image/webp'], true)
+    ) {
+      throw new ApiException('仅支持 PNG、JPEG 或 WebP 图片');
     }
     $bytes = base64_decode((string) $post['imageBase64'], true);
     if ($bytes === false || $bytes === '') {
-      throw new ApiException("图片数据无效");
+      throw new ApiException('图片数据无效');
     }
     if (strlen($bytes) > 2 * 1024 * 1024) {
-      throw new ApiException("图片不能超过 2MiB", 413);
+      throw new ApiException('图片不能超过 2MiB', 413);
     }
 
     $img = imagecreatefromstring($bytes);
     if ($img === false) {
-      throw new ApiException("图片解析失败, 请更换图片后重试");
+      throw new ApiException('图片解析失败, 请更换图片后重试');
     }
 
     $dir = runtime_path() . '/avatars';
@@ -324,12 +751,12 @@ class AccountController
     $saved = imagewebp($img, $dir . "/{$avatarId}.webp", 85);
     imagedestroy($img);
     if (!$saved) {
-      throw new ApiException("头像保存失败, 请稍后重试");
+      throw new ApiException('头像保存失败, 请稍后重试');
     }
 
     $user = UserModel::find($request->uid);
     if (!$user) {
-      throw new ApiException("用户不存在", 401);
+      throw new ApiException('用户不存在', 401);
     }
     $this->deleteAvatarFile((string) $user->avatar);
     $user->avatar = "/api/avatars/{$avatarId}";
@@ -339,20 +766,60 @@ class AccountController
       'target_type' => 'user',
       'target_id' => $user->id,
     ]);
-    return success($this->mePayload($user), "头像已更新");
+    return success($this->mePayload($user), '头像已更新');
   }
 
   /**
    * 读取头像图片（公开, /api/avatars/{avatarId}）
    */
+  #[OA\Get(
+    path: '/api/avatars/{avatarId}',
+    operationId: 'accountAvatarImage',
+    summary: '读取 WebP 头像',
+    tags: ['账号'],
+    security: [],
+    parameters: [
+      new OA\Parameter(
+        name: 'avatarId',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string', pattern: '^[A-Za-z0-9_-]{43}$'),
+      ),
+    ],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: 'WebP 图片字节',
+        content: new OA\MediaType(
+          mediaType: 'image/webp',
+          schema: new OA\Schema(type: 'string', format: 'binary'),
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 404,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function avatar_image(Request $request, string $avatarId): Response
   {
     $avatarId = (string) $avatarId;
     $path = runtime_path() . '/avatars/' . $avatarId . '.webp';
     if (!preg_match('/^[A-Za-z0-9_-]{43}$/', $avatarId) || !is_file($path)) {
-      return fail("头像不存在", 404);
+      return fail('头像不存在', 404);
     }
-    return response((string) file_get_contents($path), 200, ['Content-Type' => 'image/webp']);
+    return response((string) file_get_contents($path), 200, [
+      'Content-Type' => 'image/webp',
+    ]);
   }
 
   /**
@@ -402,6 +869,42 @@ class AccountController
    * 图片验证码挑战（登录/注册流共用, 5 分钟一次性）
    */
   #[Limit(limit: 10, ttl: 60, message: '请求过于频繁,请稍后再试!')]
+  #[OA\Post(
+    path: '/api/auth/captcha/challenges',
+    operationId: 'authCaptchaChallenge',
+    summary: '创建一次性图片验证码',
+    tags: ['账号'],
+    security: [],
+    description: '五分钟有效；返回 PNG base64 字节，无 data: 前缀。',
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountCaptchaResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 500,
+        description: '注解限流异常由现有 ApiHandler 转成 500',
+        content: new OA\MediaType(
+          mediaType: 'text/html',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountUnhandledErrorBody',
+          ),
+        ),
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function captcha_challenge(Request $request): Response
   {
     return success(CaptchaService::create());
@@ -410,6 +913,51 @@ class AccountController
   /**
    * 资格检查（未注册邮箱即符合邀请条件）
    */
+  #[OA\Post(
+    path: '/api/auth/invitations/check',
+    operationId: 'authInvitationCheck',
+    summary: '检查邀请注册资格',
+    tags: ['账号'],
+    security: [],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountEmailRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountEmailRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountInvitationCheckResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 409,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function invitation_check(Request $request): Response
   {
     $email = trim((string) $request->post('email'));
@@ -419,11 +967,71 @@ class AccountController
   /**
    * 发送邀请码（6 位, 10 分钟有效, 60 秒冷却）
    */
+  #[OA\Post(
+    path: '/api/auth/invitations/code',
+    operationId: 'authInvitationCode',
+    summary: '发送邀请码',
+    tags: ['账号'],
+    security: [],
+    description: '验证码十分钟有效，发送冷却六十秒；429 响应带 Retry-After 秒数。',
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountEmailRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountEmailRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 202,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountInvitationCodeResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 429,
+        description: '发送冷却或连续失败锁定',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/BusinessErrorBody',
+        ),
+        headers: [
+          new OA\Header(
+            header: 'Retry-After',
+            description: '剩余等待秒数',
+            schema: new OA\Schema(type: 'integer'),
+          ),
+        ],
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 409,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function invitation_code(Request $request): Response
   {
     $email = trim((string) $request->post('email'));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      throw new ApiException("邮箱格式不正确");
+      throw new ApiException('邮箱格式不正确');
     }
     try {
       $payload = InvitationService::send($email);
@@ -431,29 +1039,105 @@ class AccountController
       if ((int) $e->getCode() === 429) {
         // 页面按 Retry-After 头显示倒计时
         $remain = max(1, (int) Redis::ttl("invite:cd:{$email}"));
-        return fail($e->getMessage(), 429)->withHeader('Retry-After', (string) $remain);
+        return fail($e->getMessage(), 429)->withHeader(
+          'Retry-After',
+          (string) $remain,
+        );
       }
       throw $e;
     }
-    return success($payload, "如邮箱符合邀请条件, 验证码已发送")->withStatus(202);
+    return success($payload, '如邮箱符合邀请条件, 验证码已发送')->withStatus(
+      202,
+    );
   }
 
   /**
    * 校验邀请码, 换一次性完成令牌（可带图片验证码防自动注册）
    */
+  #[OA\Post(
+    path: '/api/auth/invitations/verify',
+    operationId: 'authInvitationVerify',
+    summary: '一次性消费邀请码并签发完成令牌',
+    tags: ['账号'],
+    security: [],
+    description: '验证码一次性消费后颁发十分钟一次性完成令牌；连续失败锁定时 429 带 Retry-After 秒数。',
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(
+          ref: '#/components/schemas/AccountInvitationVerifyRequest',
+        ),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountInvitationVerifyRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountInvitationVerifyResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 429,
+        description: '发送冷却或连续失败锁定',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/BusinessErrorBody',
+        ),
+        headers: [
+          new OA\Header(
+            header: 'Retry-After',
+            description: '剩余等待秒数',
+            schema: new OA\Schema(type: 'integer'),
+          ),
+        ],
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 422,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function invitation_verify(Request $request): Response
   {
     $post = $request->post();
-    if (empty($post) || hasMissingKeys($post, ["email", "code"])) {
-      throw new ApiException("参数不匹配");
+    if (empty($post) || hasMissingKeys($post, ['email', 'code'])) {
+      throw new ApiException('参数不匹配');
     }
     CaptchaService::checkFromRequest($post['captcha'] ?? null);
     try {
-      $payload = InvitationService::verify(trim((string) $post['email']), (string) $post['code']);
+      $payload = InvitationService::verify(
+        trim((string) $post['email']),
+        (string) $post['code'],
+      );
     } catch (ApiException $e) {
       if ((int) $e->getCode() === 429) {
-        $remain = max(1, (int) Redis::ttl("invite:fail:" . trim((string) $post['email'])));
-        return fail($e->getMessage(), 429)->withHeader('Retry-After', (string) $remain);
+        $remain = max(
+          1,
+          (int) Redis::ttl('invite:fail:' . trim((string) $post['email'])),
+        );
+        return fail($e->getMessage(), 429)->withHeader(
+          'Retry-After',
+          (string) $remain,
+        );
       }
       throw $e;
     }
@@ -463,17 +1147,75 @@ class AccountController
   /**
    * 完成注册（令牌一次性, 建账号不自动登录, 前往登录页）
    */
+  #[OA\Post(
+    path: '/api/auth/invitations/complete',
+    operationId: 'authInvitationComplete',
+    summary: '消费完成令牌并注册账号',
+    tags: ['账号'],
+    security: [],
+    description: '成功后不自动登录；完成令牌过期或已消费返回 401。',
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(
+          ref: '#/components/schemas/AccountInvitationCompleteRequest',
+        ),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountInvitationCompleteRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountInvitationCompleteResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 409,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function invitation_complete(Request $request): Response
   {
     $post = $request->post();
-    if (empty($post) || hasMissingKeys($post, ["completionToken", "nickname", "password"])) {
-      throw new ApiException("参数不匹配");
+    if (
+      empty($post) ||
+      hasMissingKeys($post, ['completionToken', 'nickname', 'password'])
+    ) {
+      throw new ApiException('参数不匹配');
     }
-    return success(InvitationService::complete(
-      (string) $post['completionToken'],
-      (string) $post['nickname'],
-      (string) $post['password']
-    ), "注册成功, 请前往登录");
+    return success(
+      InvitationService::complete(
+        (string) $post['completionToken'],
+        (string) $post['nickname'],
+        (string) $post['password'],
+      ),
+      '注册成功, 请前往登录',
+    );
   }
 
   // ==================== 设备与会话管理（P4） ====================
@@ -481,6 +1223,35 @@ class AccountController
   /**
    * 我的登录会话列表（多设备/多平台）
    */
+  #[OA\Get(
+    path: '/api/account/sessions',
+    operationId: 'accountSessions',
+    summary: '最近一百条登录会话',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountSessionsResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function sessions(Request $request): Response
   {
     $list = AuthSessionModel::where('user_id', $request->uid)
@@ -501,11 +1272,54 @@ class AccountController
   /**
    * 撤销指定会话（下线某设备）
    */
+  #[OA\Post(
+    path: '/api/account/sessions/{sid}/revoke',
+    operationId: 'accountRevokeSession',
+    summary: '撤销本人指定会话',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    parameters: [
+      new OA\Parameter(
+        name: 'sid',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer'),
+      ),
+    ],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountEmptyResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function session_revoke(Request $request, int $sid): Response
   {
-    $session = AuthSessionModel::where('id', $sid)->where('user_id', $request->uid)->first();
+    $session = AuthSessionModel::where('id', $sid)
+      ->where('user_id', $request->uid)
+      ->first();
     if (!$session) {
-      throw new ApiException("会话不存在");
+      throw new ApiException('会话不存在');
     }
     SessionService::revoke($sid);
 
@@ -513,15 +1327,47 @@ class AccountController
       'target_type' => 'session',
       'target_id' => $sid,
     ]);
-    return success([], "设备已下线");
+    return success([], '设备已下线');
   }
 
   /**
    * 下线除当前会话外的全部设备
    */
+  #[OA\Post(
+    path: '/api/account/sessions/revoke-all',
+    operationId: 'accountRevokeOtherSessions',
+    summary: '撤销除当前以外所有会话',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountRevokeAllResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function session_revoke_all(Request $request): Response
   {
-    $count = SessionService::revokeAllForUser((int) $request->uid, (int) ($request->sid ?? 0));
+    $count = SessionService::revokeAllForUser(
+      (int) $request->uid,
+      (int) ($request->sid ?? 0),
+    );
 
     AuditService::log((int) $request->uid, 'user', 'session.revoke_all', [
       'detail' => ['revoked' => $count],
@@ -534,6 +1380,35 @@ class AccountController
   /**
    * 我授权过的应用列表
    */
+  #[OA\Get(
+    path: '/api/account/grants',
+    operationId: 'accountGrants',
+    summary: '查看本人第三方授权',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountGrantsResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function grants(Request $request): Response
   {
     $grants = OAuthGrantModel::where('user_id', $request->uid)
@@ -541,21 +1416,25 @@ class AccountController
       ->get();
 
     $clientIds = $grants->pluck('client_id')->unique()->all();
-    $clients = OAuthClientModel::whereIn('client_id', $clientIds)->get()->keyBy('client_id');
+    $clients = OAuthClientModel::whereIn('client_id', $clientIds)
+      ->get()
+      ->keyBy('client_id');
 
-    $list = $grants->map(function ($g) use ($clients) {
-      $c = $clients->get($g->client_id);
-      return [
-        'client_id' => $g->client_id,
-        'app_name' => $c?->name ?? '(应用已删除)',
-        'app_type' => $c?->type,
-        'app_status' => $c?->status,
-        'scopes' => $g->scopes,
-        'status' => $g->status,
-        'granted_time' => $g->granted_time,
-        'revoked_time' => $g->revoked_time,
-      ];
-    })->values();
+    $list = $grants
+      ->map(function ($g) use ($clients) {
+        $c = $clients->get($g->client_id);
+        return [
+          'client_id' => $g->client_id,
+          'app_name' => $c?->name ?? '(应用已删除)',
+          'app_type' => $c?->type,
+          'app_status' => $c?->status,
+          'scopes' => $g->scopes,
+          'status' => $g->status,
+          'granted_time' => $g->granted_time,
+          'revoked_time' => $g->revoked_time,
+        ];
+      })
+      ->values();
 
     return success(['list' => $list]);
   }
@@ -563,12 +1442,56 @@ class AccountController
   /**
    * 撤销对某应用的授权（该应用名下我的 token 立即失效）
    */
+  #[OA\Post(
+    path: '/api/account/grants/{client_id}/revoke',
+    operationId: 'accountRevokeGrant',
+    summary: '撤销授权及关联会话',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    parameters: [
+      new OA\Parameter(
+        name: 'client_id',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'string'),
+      ),
+    ],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountRevokedSessionsResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function grant_revoke(Request $request, string $client_id): Response
   {
     if (!OAuthService::revokeGrant((int) $request->uid, $client_id, 'user')) {
-      throw new ApiException("授权不存在或已撤销");
+      throw new ApiException('授权不存在或已撤销');
     }
-    $revoked = SessionService::revokeAllForUserClient((int) $request->uid, $client_id);
+    $revoked = SessionService::revokeAllForUserClient(
+      (int) $request->uid,
+      $client_id,
+    );
 
     AuditService::log((int) $request->uid, 'user', 'oauth.revoke', [
       'client_id' => $client_id,
@@ -576,7 +1499,10 @@ class AccountController
       'target_id' => $client_id,
       'detail' => ['revoked_sessions' => $revoked],
     ]);
-    return success(['revoked_sessions' => $revoked], "已撤销授权并下线 {$revoked} 个相关会话");
+    return success(
+      ['revoked_sessions' => $revoked],
+      "已撤销授权并下线 {$revoked} 个相关会话",
+    );
   }
 
   // ==================== 修改密码（P4） ====================
@@ -584,30 +1510,81 @@ class AccountController
   /**
    * 修改密码（成功后下线其他全部设备）
    */
+  #[OA\Post(
+    path: '/api/account/password',
+    operationId: 'accountChangePassword',
+    summary: '修改密码并下线其他设备',
+    tags: ['账号'],
+    security: [['sessionAuth' => []]],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\JsonContent(ref: '#/components/schemas/AccountPasswordRequest'),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/AccountPasswordRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '成功',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/AccountRevokedSessionsResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'internal'],
+  )]
   public function password(Request $request): Response
   {
     $old = (string) $request->post('old_password', '');
     $new = (string) $request->post('new_password', '');
     if ($old === '' || $new === '') {
-      throw new ApiException("请填写旧密码与新密码");
+      throw new ApiException('请填写旧密码与新密码');
     }
     if (strlen($new) < 6) {
-      throw new ApiException("新密码至少6位");
+      throw new ApiException('新密码至少6位');
     }
 
     $user = UserModel::find($request->uid);
     if (!$user || !password_verify($old, (string) $user->password_hash)) {
-      throw new ApiException("旧密码不正确");
+      throw new ApiException('旧密码不正确');
     }
 
     $user->password_hash = password_hash($new, PASSWORD_BCRYPT);
     $user->save();
 
-    $revoked = SessionService::revokeAllForUser((int) $request->uid, (int) ($request->sid ?? 0));
+    $revoked = SessionService::revokeAllForUser(
+      (int) $request->uid,
+      (int) ($request->sid ?? 0),
+    );
 
     AuditService::log((int) $request->uid, 'user', 'user.password', [
       'detail' => ['revoked_sessions' => $revoked],
     ]);
-    return success(['revoked_sessions' => $revoked], "密码已修改, 其他 {$revoked} 个设备已下线");
+    return success(
+      ['revoked_sessions' => $revoked],
+      "密码已修改, 其他 {$revoked} 个设备已下线",
+    );
   }
 }

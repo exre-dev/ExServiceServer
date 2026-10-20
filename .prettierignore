@@ -1,0 +1,7 @@
+/vendor/
+/node_modules/
+/runtime/
+/public/uploads/
+/web/admin-web/node_modules/
+/web/admin-web/dist/
+/web/user-web/

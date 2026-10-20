@@ -1,0 +1,160 @@
+SystemEnvironmentCheck:
+  properties:
+    name:
+      type: string
+    passed:
+      type: boolean
+  required:
+    - name
+    - passed
+  type: object
+SystemHealthData:
+  properties:
+    status:
+      description: 健康检查与首次部署初始化的数据结构。
+      enum:
+        - ok
+      type: string
+  required:
+    - status
+  type: object
+SystemInstallAdminInput:
+  properties:
+    email:
+      format: email
+      maxLength: 255
+      type: string
+    password:
+      description: '12..72 字节，至少一个字母和数字；禁止控制字符'
+      format: password
+      type: string
+      writeOnly: true
+    password_confirmation:
+      description: '必须与 password 完全一致'
+      format: password
+      type: string
+      writeOnly: true
+    username:
+      maxLength: 64
+      minLength: 1
+      type: string
+  required:
+    - email
+    - username
+    - password
+    - password_confirmation
+  type: object
+SystemInstallData:
+  properties:
+    installed:
+      enum:
+        - true
+      type: boolean
+  required:
+    - installed
+  type: object
+SystemInstallDatabaseInput:
+  properties:
+    database:
+      pattern: '^[a-zA-Z0-9_-]{1,63}$'
+      type: string
+    host:
+      maxLength: 253
+      pattern: '^[a-zA-Z0-9.:-]+$'
+      type: string
+    password:
+      description: 可为空，不提供真实示例
+      type: string
+      writeOnly: true
+    port:
+      description: '接受整数或数字字符串；数值范围 1..65535'
+      oneOf:
+        -
+          maximum: 65535
+          minimum: 1
+          type: integer
+        -
+          pattern: '^[0-9]+$'
+          type: string
+    username:
+      maxLength: 63
+      minLength: 1
+      type: string
+  required:
+    - host
+    - port
+    - database
+    - username
+    - password
+  type: object
+SystemInstallInput:
+  description: '连接信息/管理员字段仅接受字符串或整数且禁止控制字符；除 password 外 trim 后不能为空。写入 .env、生成 JWT 密钥并创建 install.lock；不导入 seed.sql。'
+  properties:
+    admin:
+      $ref: '../openapi.yaml#/components/schemas/SystemInstallAdminInput'
+    database:
+      $ref: '../openapi.yaml#/components/schemas/SystemInstallDatabaseInput'
+    force:
+      default: false
+      description: '必须为 JSON 布尔值；true 在事务内重建 public 下全部 app_ 业务表'
+      type: boolean
+    force_confirmation:
+      description: 'force=true 时必须精确等于“重置数据库”'
+      type: string
+    redis:
+      $ref: '../openapi.yaml#/components/schemas/SystemInstallRedisInput'
+  required:
+    - database
+    - redis
+    - admin
+  type: object
+SystemInstallRedisInput:
+  properties:
+    database:
+      description: '接受整数或数字字符串；数值范围 0..65535'
+      oneOf:
+        -
+          maximum: 65535
+          minimum: 0
+          type: integer
+        -
+          pattern: '^[0-9]+$'
+          type: string
+    host:
+      maxLength: 253
+      pattern: '^[a-zA-Z0-9.:-]+$'
+      type: string
+    password:
+      description: 可为空，不提供真实示例
+      type: string
+      writeOnly: true
+    port:
+      description: '接受整数或数字字符串；数值范围 1..65535'
+      oneOf:
+        -
+          maximum: 65535
+          minimum: 1
+          type: integer
+        -
+          pattern: '^[0-9]+$'
+          type: string
+  required:
+    - host
+    - port
+    - database
+    - password
+  type: object
+SystemInstallationStatusData:
+  description: '已安装仅返回 installed=true；未安装返回 installed=false、checks、ready。检查 PHP >=8.1、pdo_pgsql、redis、gd、mbstring、项目及 .env 可写、schema.sql 可读。install.lock 或已有 superadmin 均视为已安装；后者可补写标记。不返回连接凭据。'
+  properties:
+    checks:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/SystemEnvironmentCheck'
+      type: array
+    installed:
+      type: boolean
+    ready:
+      type: boolean
+  required:
+    - installed
+  type: object
