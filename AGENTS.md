@@ -29,13 +29,15 @@
 
 ## OpenAPI 与 Contract-first
 
-1. 实现或调用本 PHP 服务接口前，读取 `api/public/openapi.yaml` 或 `api/internal/openapi.yaml`，沿相对 `$ref` 查阅对应 `paths/`、`schemas/` 模块；路径、方法、参数、字段和鉴权以对应契约为准。所属主项目的 Fastify Contract 单独描述其服务。
+1. 实现或调用本 PHP 服务接口前，读取 `api/public/openapi.yaml` 或 `api/internal/openapi.yaml`，沿相对 `$ref` 查阅对应 `paths/`、`schemas/` 模块；路径、方法、参数、字段和鉴权以对应契约为准。父工程 Website SDK 消费本仓库完整内部契约。
 2. 接口定义维护在 Controller 的 `OpenApi\Attributes` 和 `app/common/openapi/` 的 schema 中，通过 `webman-tech/swagger` 生成 YAML。API 变更先修改定义，再实现业务；入口、模块文件、完整单文件和生成清单均由 CLI 维护，禁止手改。
 3. 每个 operation 明确声明唯一的 `operationId` 与 `x-audience: public` 或 `internal`。公开版仅包含外部插件、第三方应用接口和 OAuth 接入入口；内部版不重复公开接口，两份合起来覆盖全部注册业务路由。公开范围变更同时核对 `config/openapi.php` 的发布策略。
 4. 业务路由继续在 `app/route.php` 显式注册；方法、完整路径及参数与元数据一致。保留插件的默认文档入口和业务路由自动注册关闭，CLI 生成不依赖运行中的 HTTP 服务。
 5. 修改后执行 `composer api:generate`、`composer api:lint` 和 `composer api:check`，同步交付 PHP 定义与全部生成物。check 校验操作归属、路由覆盖、模块引用及完整产物集合的一致性；测试范围与执行规则遵守 `TESTING.md`。
 6. 契约准确描述实际状态码、成功和错误信封、文件或 HTML 响应及特殊分支；同步检查调用方、对接文档和 `sdk/fivem-excore/`。公开交付使用完整 `api/public/` 目录，或独立单文件 `api/generated/openapi.public.yaml`；入口 YAML 必须携带其引用文件一起分发。
 7. 交付时分别说明静态契约检查、真实 HTTP 联调、浏览器和外部部署的实际结果及未验证项。
+
+Website React 前端位于父工程。PHP 自有 `/oauth/authorize`、`/oauth/device` HTML 页面及管理端原生请求遵守本仓库路由与鉴权规则；父工程的 TypeScript SDK 规则只约束 Website 消费端，不要求改写本仓库自有页面请求。更改公开 Website origin 时核对 `config/userweb.php` 的 `USER_WEB_URL`，本地默认 8080。
 
 ## 编码约定
 

@@ -582,7 +582,7 @@
       - 账号
     x-audience: internal
   patch:
-    description: "更新当前用户资料（用户侧网站对接, PATCH /api/auth/me）\n支持: nickname(显示名) / qq(可 null 清空) / avatar(null 清除头像恢复默认)\nfivemId 不允许在此设置——游戏身份必须走绑定码/SSO 绑定流程"
+    description: "更新当前用户资料（用户侧网站对接, PATCH /api/auth/me）\r\n支持: nickname(显示名) / qq(可 null 清空) / avatar(null 清除头像恢复默认)\r\nfivemId 不允许在此设置——游戏身份必须走绑定码/SSO 绑定流程"
     operationId: authUpdateProfile
     requestBody:
       content:

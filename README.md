@@ -1,6 +1,6 @@
-# EXRE B2B2C 平台（webman 后端 + 双前端）
+# EXRE B2B2C 平台（Webman 后端）
 
-> 设计蓝图 `docs/b2b2c-blueprint.md`（P0-P5 已全部落地）；测试手册 `docs/test-accounts.md`；用户侧 API 对接 `docs/user-api.md`；代码约定 `.agents/skills/webman-backend/SKILL.md`。
+本仓库是独立的 PHP/Webman 服务，负责 Website HTTP、管理端、OAuth、PostgreSQL、Redis 和服务端文件。父工程的 ExWebsite React 前端消费本仓库生成的内部 OpenAPI；本仓库的 Composer 命令和运行数据由本仓库独立管理。测试规则见 `TESTING.md`。
 
 ## 目录结构
 
@@ -8,15 +8,10 @@
 app/            webman 后端（PHP；/api 前缀：account / admin / server / open / oauth / docs）
 config/         后端配置          database/  建库脚本(schema.sql + seed.sql)
 docs/           设计与对接文档     sdk/       FiveM 插件端 EXCore Lua SDK
-web/
-├── admin-web/  管理端 UI（React19 + antd，随本仓库开发，dev :5173）
-└── user-web/   用户侧 UI（ExWebsite，独立项目：自带 .git、独立 exre/hydra 数据库
-                与 Hydra OIDC，pnpm monorepo，dev :8080；父仓库不追踪其内容）
+web/admin-web/ 管理端 UI（React19 + antd，随本仓库开发，dev :5173）
 ```
 
-**端口约定**：后端 8787 / 管理端 5173 / 用户侧 8080-8082+4444。注意：user-web 默认
-`LOCAL_POSTGRES_PORT=5432` 会与后端容器 `webman-pgsql`（已占 5432）冲突，启动 user-web
-前在其 `.env.local` 改为其他端口（如 5433）。
+**本地端口**：PHP API 默认 8787，管理端开发入口 5173，父工程 Website 前端默认 8080。前端端口变化时同步核对 PHP `USER_WEB_URL`；公开示例默认 `http://127.0.0.1:8080`。父工程 `pnpm dev` 只启动前端，不初始化或管理本 PHP 服务与数据库。
 
 ## OpenAPI 接口契约
 
