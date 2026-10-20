@@ -2,8 +2,6 @@
 
 namespace app\server;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\middleware\ServerMember;
 use app\common\model\ServerMemberModel;
@@ -26,63 +24,6 @@ class IdentController
   /**
    * 本空间绑定记录列表
    */
-  #[OA\Get(
-    path: '/api/server/{sid}/idents',
-    operationId: 'serverIdentList',
-    summary: '游戏绑定记录',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅返回 bound_server_id 为当前空间的记录，按 ID 倒序；列表返回完整 ident_value 与精简 user 关系。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerIdentsData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function index(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -99,82 +40,6 @@ class IdentController
    * 录入绑定码: 校验 ticket → 绑定游戏标识到指定用户 → 自动入空间为 member
    * ticket 一次性（Redis get + del）, 300 秒有效, 与空间强校验
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/idents/bind',
-    operationId: 'serverIdentBind',
-    summary: '使用游戏 ticket 绑定用户',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。ticket 校验归属空间并一次性消费；目标用户须存在，游戏标识全局唯一。已有同用户绑定直接返回空 data 和提示；其他用户绑定或空间 banned 拒绝。无成员关系则自动加入，left 成员重新激活。新绑定仅回显 ident_tail 与用户 ID/昵称。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/ServerIdentBindInput'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/ServerIdentBindInput',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              oneOf: [
-                new OA\Schema(ref: '#/components/schemas/ServerIdentBoundData'),
-                new OA\Schema(
-                  type: 'array',
-                  maxItems: 0,
-                  items: new OA\Items(type: 'string'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function bind(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -266,72 +131,6 @@ class IdentController
   /**
    * 解绑（仅限本空间产生的绑定记录）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/idents/{id}/unbind',
-    operationId: 'serverIdentUnbind',
-    summary: '解绑游戏标识',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅允许删除在本空间产生的标识记录；不存在或其他空间返回 400。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'id',
-        in: 'path',
-        required: true,
-        description: '绑定记录 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function unbind(Request $request, int $sid, int $id): Response
   {
     ServerMember::assertManager($request);

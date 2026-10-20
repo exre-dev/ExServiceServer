@@ -47,8 +47,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: '使用当前会话确认 SSO 授权'
     tags:
       - '内部 SSO'
@@ -150,22 +149,19 @@
     description: '需要用户会话；client_id 与 redirect_uri 虽未做独立必填检查，但缺失时应用或回调校验失败，返回 400。'
     operationId: getInternalOAuthAuthorizationInfo
     parameters:
-      -
-        description: '必须对应 active third_party 应用。'
+      - description: '必须对应 active third_party 应用。'
         in: query
         name: client_id
         required: true
         schema:
           type: string
-      -
-        description: 必须精确匹配应用白名单。
+      - description: 必须精确匹配应用白名单。
         in: query
         name: redirect_uri
         required: true
         schema:
           type: string
-      -
-        description: '与允许 scope 取交集，自动包含 user.basic。'
+      - description: '与允许 scope 取交集，自动包含 user.basic。'
         in: query
         name: scope
         required: false
@@ -195,8 +191,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 查询待授权应用信息
     tags:
       - '内部 OAuth'
@@ -238,8 +233,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 确认网页授权并返回回调地址
     tags:
       - '内部 OAuth'
@@ -287,8 +281,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 确认六位设备用户码
     tags:
       - '内部 OAuth'

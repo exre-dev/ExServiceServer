@@ -81,7 +81,7 @@ components:
       scheme: bearer
       type: http
 info:
-  description: '由 PHP 接口元数据生成；服务器地址相对于当前部署根路径。'
+  description: '手写维护的 PHP 服务接口契约；服务器地址相对于当前部署根路径。'
   title: 'EXRE 社区 API'
   version: 1.0.0
 openapi: 3.0.3
@@ -111,48 +111,33 @@ paths:
   /oauth/device:
     $ref: './paths/oauth.yaml#/~1oauth~1device'
 servers:
-  -
-    url: /
+  - url: /
 tags:
-  -
-    description: 账号
+  - description: 账号
     name: 账号
-  -
-    description: 平台管理端
+  - description: 平台管理端
     name: 平台管理端
-  -
-    description: 文档浏览
+  - description: 文档浏览
     name: 文档浏览
-  -
-    description: 通知
+  - description: 通知
     name: 通知
-  -
-    description: 'OAuth 页面'
+  - description: 'OAuth 页面'
     name: 'OAuth 页面'
-  -
-    description: '内部 OAuth'
+  - description: '内部 OAuth'
     name: '内部 OAuth'
-  -
-    description: 'OAuth 授权'
+  - description: 'OAuth 授权'
     name: 'OAuth 授权'
-  -
-    description: '内部 SSO'
+  - description: '内部 SSO'
     name: '内部 SSO'
-  -
-    description: 开放插件
+  - description: 开放插件
     name: 开放插件
-  -
-    description: 'OAuth 用户资源'
+  - description: 'OAuth 用户资源'
     name: 'OAuth 用户资源'
-  -
-    description: 空间管理
+  - description: 空间管理
     name: 空间管理
-  -
-    description: 存储
+  - description: 存储
     name: 存储
-  -
-    description: 反馈
+  - description: 反馈
     name: 反馈
-  -
-    description: 系统
+  - description: 系统
     name: 系统

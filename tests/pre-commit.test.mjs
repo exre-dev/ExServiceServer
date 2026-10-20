@@ -16,9 +16,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const manifest = 'api/.openapi-manifest.json';
-const output = 'api/generated/openapi.public.yaml';
-const obsolete = 'api/public/paths/obsolete.yaml';
+const contract = 'api/public/openapi.yaml';
 const before =
   "<?php\n\nclass SampleController\n{\n  public function value(): string\n  {\n    return 'before';\n  }\n}\n";
 
@@ -38,18 +36,14 @@ function fixture(t) {
     GIT_COMMITTER_EMAIL: 'hook-test@example.invalid',
     GIT_CONFIG_NOSYSTEM: '1',
     HUSKY: '1',
-    HUSKY_TEST_COMPOSER: path.join(directory, 'fixture-composer.mjs'),
-    PATH: `${path.join(directory, 'fixture-bin')}${path.delimiter}${process.env.PATH}`,
   };
-  // 测试不继承宿主提交的索引、工作树或配置覆盖。
   for (const key of Object.keys(env)) {
     if (
       /^GIT_(?:DIR|WORK_TREE|INDEX_FILE|COMMON_DIR|CONFIG_COUNT|CONFIG_KEY_\d+|CONFIG_VALUE_\d+)$/.test(
         key
       )
-    ) {
+    )
       delete env[key];
-    }
   }
   const run = (command, args, overrides = {}) =>
     spawnSync(command, args, {
@@ -63,7 +57,6 @@ function fixture(t) {
     assert.equal(result.status, 0, result.stderr || result.stdout);
     return result.stdout.trim();
   };
-
   git('init', '--quiet');
   git('config', 'core.autocrlf', 'false');
   git('config', 'commit.gpgsign', 'false');
@@ -82,18 +75,22 @@ function fixture(t) {
     path.join(directory, 'node_modules'),
     'junction'
   );
-  write('.gitignore', '/node_modules\n/fixture-bin\n/fixture-composer.mjs\n');
+  write('.gitignore', '/node_modules\n');
   write('composer.json', '{"require":{"php":">=8.1"}}\n');
-  write('app/SampleController.php', before);
-  write(output, 'before\n');
-  write(obsolete, 'obsolete\n');
   write(
-    manifest,
-    JSON.stringify({
-      version: 1,
-      files: ['generated/openapi.public.yaml', 'public/paths/obsolete.yaml'],
-    })
+    'package.json',
+    JSON.stringify({ scripts: { 'api:check': 'node fixture-check.mjs' } })
   );
+  write(
+    'fixture-check.mjs',
+    `
+import { readFileSync, writeFileSync } from 'node:fs';
+writeFileSync('.git/check-called', readFileSync('${contract}', 'utf8'));
+if (process.env.HUSKY_TEST_FAIL_CHECK) process.exit(12);
+`
+  );
+  write('app/SampleController.php', before);
+  write(contract, 'openapi: 3.0.3\ninfo: { title: before }\n');
   write('api/notes.md', 'original notes\n');
   write(
     'web/partial.ts',
@@ -104,30 +101,6 @@ function fixture(t) {
   );
   git('add', '--all');
   git('-c', 'core.hooksPath=', 'commit', '--quiet', '-m', 'fixture baseline');
-
-  write(
-    'fixture-bin/composer',
-    '#!/bin/sh\nnode "$HUSKY_TEST_COMPOSER" "$@"\n'
-  );
-  write(
-    'fixture-composer.mjs',
-    `
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-const mode = process.argv[2];
-if (process.env.HUSKY_TEST_FAIL === mode) process.exit(12);
-if (mode === 'api:generate') {
-  const source = readFileSync('app/SampleController.php', 'utf8');
-  mkdirSync('api/generated', { recursive: true });
-  writeFileSync('${output}', 'source: ' + JSON.stringify(source) + '\\n');
-  rmSync('${obsolete}', { force: true });
-  writeFileSync('${manifest}', JSON.stringify({ version: 1, files: [
-    process.env.HUSKY_TEST_UNSAFE ? '../outside.ts' : 'generated/openapi.public.yaml'
-  ] }));
-}
-if (mode === 'api:lint' && readFileSync('${output}', 'utf8') === 'before\\n') process.exit(13);
-if (mode === 'api:check' && !readFileSync('${output}', 'utf8').includes("return 'after';")) process.exit(14);
-`
-  );
   const install = run(process.execPath, [
     path.join(root, 'node_modules/husky/bin.js'),
   ]);
@@ -135,18 +108,10 @@ if (mode === 'api:check' && !readFileSync('${output}', 'utf8').includes("return 
   return { directory, write, run, git, head: git('rev-parse', 'HEAD') };
 }
 
-test('提交前格式化暂存源码，生成并提交受管产物，保留其他未暂存内容', (t) => {
+test('格式化已暂存代码和手写契约，只读校验并保留其他未暂存内容', (t) => {
   const f = fixture(t);
   f.write('app/SampleController.php', before.replace("'before'", '"after"'));
-  const files = {
-    'web/space name.js': 'export const value="after"',
-    'web/sample.ts': 'export const value:string="after"',
-    'web/sample.jsx': 'export const value=<div>after</div>',
-    'web/sample.tsx': 'export const value=<div>after</div>',
-    'web/sample.mjs': 'export const value="after"',
-    'web/sample.cjs': 'module.exports={value:"after"}',
-  };
-  for (const [name, source] of Object.entries(files)) f.write(name, source);
+  f.write(contract, 'openapi: 3.0.3\ninfo: {title: after}\n');
   const partial = readFileSync(
     path.join(f.directory, 'web/partial.ts'),
     'utf8'
@@ -155,7 +120,7 @@ test('提交前格式化暂存源码，生成并提交受管产物，保留其�
     'web/partial.ts',
     partial.replace("value0 = 'before';", 'value0="after"')
   );
-  f.git('add', '--', 'app/SampleController.php', 'web');
+  f.git('add', '--', 'app/SampleController.php', contract, 'web/partial.ts');
   f.write(
     'web/partial.ts',
     partial
@@ -163,25 +128,25 @@ test('提交前格式化暂存源码，生成并提交受管产物，保留其�
       .replace("value11 = 'before';", 'value11="scratch"')
   );
   f.write('api/notes.md', 'unstaged notes\n');
-
+  f.write('unrelated.js', 'export const scratch = true;');
   const result = f.run('git', ['commit', '--quiet', '-m', 'exercise hook']);
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.notEqual(f.git('rev-parse', 'HEAD'), f.head);
   assert.match(
     f.git('show', 'HEAD:app/SampleController.php'),
     /return 'after';/
   );
-  assert.match(f.git('show', `HEAD:${output}`), /return 'after';/);
-  assert.equal(f.git('ls-files', '--', obsolete), '');
-  assert.equal(existsSync(path.join(f.directory, obsolete)), false);
+  assert.match(f.git('show', `HEAD:${contract}`), /info: \{ title: after \}/);
+  assert.equal(
+    readFileSync(path.join(f.directory, '.git/check-called'), 'utf8').trim(),
+    f.git('show', `HEAD:${contract}`)
+  );
+  assert.equal(existsSync(path.join(f.directory, 'api/generated')), false);
   assert.equal(f.git('show', 'HEAD:api/notes.md'), 'original notes');
   assert.equal(
     readFileSync(path.join(f.directory, 'api/notes.md'), 'utf8'),
     'unstaged notes\n'
   );
-  for (const name of Object.keys(files)) {
-    assert.ok(f.git('show', `HEAD:${name}`).endsWith(';'), name);
-  }
+  assert.equal(f.git('ls-files', '--', 'unrelated.js'), '');
   assert.match(f.git('show', 'HEAD:web/partial.ts'), /value0 = 'after';/);
   assert.match(f.git('show', 'HEAD:web/partial.ts'), /value11 = 'before';/);
   assert.match(
@@ -190,75 +155,69 @@ test('提交前格式化暂存源码，生成并提交受管产物，保留其�
   );
 });
 
-for (const kind of ['tracked', 'untracked', 'partially staged']) {
-  test(`接口定义存在 ${kind} 未暂存修改时阻止提交并保留索引`, (t) => {
-    const f = fixture(t);
-    f.write('web/change.js', 'export const value="after"');
-    f.git('add', '--', 'web/change.js');
-    if (kind === 'partially staged') {
-      f.write('app/SampleController.php', before.replace('before', 'staged'));
-      f.git('add', '--', 'app/SampleController.php');
-    }
-    f.write(
-      kind === 'untracked'
-        ? 'app/NewController.php'
-        : 'app/SampleController.php',
-      before.replace('before', 'scratch')
-    );
-    const index = f.git('write-tree');
-
-    const result = f.run('git', ['commit', '--quiet', '-m', 'must fail']);
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr + result.stdout, /未暂存/);
-    assert.equal(f.git('write-tree'), index);
-    assert.equal(f.git('rev-parse', 'HEAD'), f.head);
-    assert.equal(
-      readFileSync(path.join(f.directory, output), 'utf8'),
-      'before\n'
-    );
-  });
+for (const source of ['php', 'yaml']) {
+  for (const kind of ['tracked', 'untracked', 'partially staged']) {
+    test(`${source} 输入存在 ${kind} 未暂存修改时阻止提交并保留索引`, (t) => {
+      const f = fixture(t);
+      f.write('web/change.js', 'export const value="after"');
+      f.git('add', '--', 'web/change.js');
+      const name = source === 'php' ? 'app/SampleController.php' : contract;
+      const value =
+        source === 'php' ? before : 'openapi: 3.0.3\ninfo: { title: before }\n';
+      if (kind === 'partially staged') {
+        f.write(name, value.replace('before', 'staged'));
+        f.git('add', '--', name);
+      }
+      f.write(
+        kind === 'untracked'
+          ? source === 'php'
+            ? 'app/NewController.php'
+            : 'api/public/paths/new.yaml'
+          : name,
+        value.replace('before', 'scratch')
+      );
+      const index = f.git('write-tree');
+      const result = f.run('git', ['commit', '--quiet', '-m', 'must fail']);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr + result.stdout, /未暂存/);
+      assert.equal(f.git('write-tree'), index);
+      assert.equal(f.git('rev-parse', 'HEAD'), f.head);
+      assert.equal(
+        existsSync(path.join(f.directory, '.git/check-called')),
+        false
+      );
+    });
+  }
 }
 
-test('格式化解析失败时阻止提交，不生成或暂存契约', (t) => {
+test('格式化解析失败时阻止提交并保留索引', (t) => {
   const f = fixture(t);
-  f.write('app/SampleController.php', before.replace('before', 'after'));
   f.write('web/broken.ts', 'export const = ;');
-  f.git('add', '--', 'app/SampleController.php', 'web/broken.ts');
+  f.git('add', '--', 'web/broken.ts');
   const index = f.git('write-tree');
   const result = f.run('git', ['commit', '--quiet', '-m', 'must fail']);
   assert.notEqual(result.status, 0);
   assert.equal(f.git('rev-parse', 'HEAD'), f.head);
   assert.equal(f.git('write-tree'), index);
-  assert.equal(
-    readFileSync(path.join(f.directory, output), 'utf8'),
-    'before\n'
-  );
+  assert.equal(existsSync(path.join(f.directory, '.git/check-called')), false);
 });
 
-for (const mode of ['api:generate', 'api:lint', 'api:check']) {
-  test(`${mode} 失败时阻止提交，生成物不进入索引`, (t) => {
-    const f = fixture(t);
-    f.write('app/SampleController.php', before.replace('before', 'after'));
-    f.git('add', '--', 'app/SampleController.php');
-    const result = f.run('git', ['commit', '--quiet', '-m', 'must fail'], {
-      HUSKY_TEST_FAIL: mode,
-    });
-    assert.notEqual(result.status, 0);
-    assert.equal(f.git('rev-parse', 'HEAD'), f.head);
-    assert.equal(f.git('show', `:${output}`), 'before');
-    assert.equal(f.git('show', `:${obsolete}`), 'obsolete');
-  });
-}
-
-test('清单中的越界路径不能使无关文件自动进入提交', (t) => {
+test('契约校验失败时阻止提交，不修改或自动暂存契约', (t) => {
   const f = fixture(t);
   f.write('app/SampleController.php', before.replace('before', 'after'));
   f.git('add', '--', 'app/SampleController.php');
-  f.write('outside.ts', 'export const secret = true;');
   const result = f.run('git', ['commit', '--quiet', '-m', 'must fail'], {
-    HUSKY_TEST_UNSAFE: '1',
+    HUSKY_TEST_FAIL_CHECK: '1',
   });
   assert.notEqual(result.status, 0);
   assert.equal(f.git('rev-parse', 'HEAD'), f.head);
-  assert.equal(f.git('ls-files', '--', 'outside.ts'), '');
+  assert.equal(
+    f.git('show', `:${contract}`),
+    'openapi: 3.0.3\ninfo: { title: before }'
+  );
+  assert.equal(
+    readFileSync(path.join(f.directory, contract), 'utf8'),
+    'openapi: 3.0.3\ninfo: { title: before }\n'
+  );
+  assert.equal(existsSync(path.join(f.directory, 'api/generated')), false);
 });

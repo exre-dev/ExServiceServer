@@ -69,12 +69,10 @@ SystemInstallDatabaseInput:
     port:
       description: '接受整数或数字字符串；数值范围 1..65535'
       oneOf:
-        -
-          maximum: 65535
+        - maximum: 65535
           minimum: 1
           type: integer
-        -
-          pattern: '^[0-9]+$'
+        - pattern: '^[0-9]+$'
           type: string
     username:
       maxLength: 63
@@ -113,12 +111,10 @@ SystemInstallRedisInput:
     database:
       description: '接受整数或数字字符串；数值范围 0..65535'
       oneOf:
-        -
-          maximum: 65535
+        - maximum: 65535
           minimum: 0
           type: integer
-        -
-          pattern: '^[0-9]+$'
+        - pattern: '^[0-9]+$'
           type: string
     host:
       maxLength: 253
@@ -131,12 +127,10 @@ SystemInstallRedisInput:
     port:
       description: '接受整数或数字字符串；数值范围 1..65535'
       oneOf:
-        -
-          maximum: 65535
+        - maximum: 65535
           minimum: 1
           type: integer
-        -
-          pattern: '^[0-9]+$'
+        - pattern: '^[0-9]+$'
           type: string
   required:
     - host

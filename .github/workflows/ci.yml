@@ -1,4 +1,4 @@
-name: PHP CI
+name: Backend CI
 
 on:
   pull_request:
@@ -73,17 +73,29 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.22.1'
+          cache: npm
+
+      - name: Install contract tooling
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Check PHP syntax
         run: git ls-files -z -- '*.php' ':!:web/**' | xargs -0 -r -n 1 php -l
 
-      - name: Check OpenAPI definitions and generated artifacts
+      - name: Check OpenAPI contracts
         run: |
-          composer api:lint
-          composer api:check
+          npm run api:format:check
+          npm run api:lint
+          npm run api:check
 
       # 每个 PHP 测试使用独立进程；不运行 admin-web 或浏览器测试。
-      - name: Test OpenAPI generation
-        run: php tests/openapi.php
+      - name: Test contract tooling and commit hooks
+        run: |
+          npm run test:api
+          npm run test:hooks
 
       - name: Test feedback uploads
         run: php tests/feedback_upload.php

@@ -2,8 +2,6 @@
 
 namespace app\oauth;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\services\AuditService;
 use app\common\services\OAuthService;
@@ -25,80 +23,6 @@ class AuthorizeController
   /**
    * 授权确认页（浏览器重定向目标）
    */
-  #[OA\Get(
-    path: '/oauth/authorize',
-    operationId: 'showOAuthAuthorizationPage',
-    summary: '显示 OAuth 授权确认页面',
-    description: '免登录返回 HTML；页面自行要求登录并调用内部 authorize-info 与 authorize/confirm。查询参数由 HTML 脚本读取，服务端页面动作本身不校验参数。',
-    tags: ['OAuth 页面'],
-    security: [],
-    parameters: [
-      new OA\Parameter(
-        name: 'client_id',
-        in: 'query',
-        required: false,
-        description: 'HTML 确认页读取的应用标识。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'redirect_uri',
-        in: 'query',
-        required: false,
-        description: 'HTML 确认页读取的回调地址。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'state',
-        in: 'query',
-        required: false,
-        description: 'HTML 确认页原样传给授权确认接口的状态。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'scope',
-        in: 'query',
-        required: false,
-        description: '空格分隔的申请 scope。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'code_challenge',
-        in: 'query',
-        required: false,
-        description: '可选 PKCE challenge。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'code_challenge_method',
-        in: 'query',
-        required: false,
-        description: 'S256 或 plain。',
-        schema: new OA\Schema(type: 'string', default: 'plain'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '浏览器 HTML 页面。',
-        content: new OA\MediaType(
-          mediaType: 'text/html',
-          schema: new OA\Schema(type: 'string'),
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function page(Request $request): Response
   {
     $html = file_get_contents(app_path('oauth/pages/authorize.html'));
@@ -112,69 +36,6 @@ class AuthorizeController
   /**
    * 待授权应用信息（确认页登录后拉取）
    */
-  #[OA\Get(
-    path: '/api/oauth/authorize-info',
-    operationId: 'getInternalOAuthAuthorizationInfo',
-    summary: '查询待授权应用信息',
-    description: '需要用户会话；client_id 与 redirect_uri 虽未做独立必填检查，但缺失时应用或回调校验失败，返回 400。',
-    tags: ['内部 OAuth'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'client_id',
-        in: 'query',
-        required: true,
-        description: '必须对应 active third_party 应用。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'redirect_uri',
-        in: 'query',
-        required: true,
-        description: '必须精确匹配应用白名单。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'scope',
-        in: 'query',
-        required: false,
-        description: '与允许 scope 取交集，自动包含 user.basic。',
-        schema: new OA\Schema(type: 'string'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/OAuthAuthorizationInfoResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function info(Request $request): Response
   {
     $clientId = (string) $request->get('client_id', '');
@@ -213,63 +74,6 @@ class AuthorizeController
   /**
    * 用户确认授权 → 生成授权码, 返回回调地址（含 code + state）
    */
-  #[OA\Post(
-    path: '/api/oauth/authorize/confirm',
-    operationId: 'confirmInternalOAuthAuthorization',
-    summary: '确认网页授权并返回回调地址',
-    description: '需要用户会话与 active third_party 应用；校验回调白名单，合并 scope 授权关系并生成 300 秒一次性授权码。响应为包含 code/state 的 redirect 字符串，不是 HTTP 302。',
-    tags: ['内部 OAuth'],
-    security: [['sessionAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthAuthorizationConfirmRequest',
-          ),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthAuthorizationConfirmRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/OAuthAuthorizationConfirmResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function confirm(Request $request): Response
   {
     $post = $request->post();

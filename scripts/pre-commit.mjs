@@ -1,18 +1,17 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-
-const manifestPath = 'api/.openapi-manifest.json';
 const inputs = [
   'app/',
   'config/',
   'plugin/',
   'support/',
-  'scripts/openapi.php',
+  ':(glob)api/**/*.yaml',
+  'scripts/openapi.mjs',
+  'scripts/openapi-routes.php',
+  'package.json',
+  'package-lock.json',
   'composer.json',
   'composer.lock',
 ];
-const managedPath =
-  /^(?:(?:public|internal)\/(?:openapi\.yaml|(?:paths|schemas)\/[a-z][a-z0-9_-]*\.yaml)|generated\/openapi\.(?:public|internal)\.yaml)$/;
 
 function git(args, options = {}) {
   const result = spawnSync('git', args, {
@@ -47,60 +46,13 @@ function checkInputs() {
   }
 }
 
-function manifestFiles(source) {
-  const manifest = JSON.parse(source);
-  if (
-    manifest.version !== 1 ||
-    !Array.isArray(manifest.files) ||
-    manifest.files.length > 1024 ||
-    manifest.files.some(
-      (file) => typeof file !== 'string' || !managedPath.test(file)
-    )
-  ) {
-    throw new Error('非法 OpenAPI 生成清单，拒绝自动暂存');
-  }
-  return manifest.files.map((file) => `api/${file}`);
-}
-
-function stageArtifacts() {
-  const tracked = new Set(paths(git(['ls-files', '-z', '--', 'api/'])));
-  const previous = tracked.has(manifestPath)
-    ? manifestFiles(git(['show', `:${manifestPath}`]))
-    : [];
-  const current = manifestFiles(readFileSync(manifestPath, 'utf8'));
-  // 包含旧清单和旧入口的删除；不把 api/ 中的手写文件自动加入提交。
-  const candidates = new Set([
-    manifestPath,
-    ...previous,
-    ...current,
-    'api/openapi.public.yaml',
-    'api/openapi.internal.yaml',
-  ]);
-  const targets = [...candidates].filter(
-    (file) => existsSync(file) || tracked.has(file)
-  );
-  git(
-    [
-      '--literal-pathspecs',
-      'add',
-      '-A',
-      '--pathspec-from-file=-',
-      '--pathspec-file-nul',
-    ],
-    { input: targets.join('\0') + '\0' }
-  );
-}
-
 try {
   switch (process.argv[2]) {
     case 'check':
       checkInputs();
       break;
-    case 'stage':
-      stageArtifacts();
-      break;
     default:
-      throw new Error('用法: node scripts/pre-commit.mjs check|stage');
+      throw new Error('用法: node scripts/pre-commit.mjs check');
   }
 } catch (error) {
   console.error(error.message);

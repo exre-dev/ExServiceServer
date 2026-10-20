@@ -16,7 +16,6 @@ use app\common\services\SessionService;
 
 use support\Redis;
 use support\limiter\annotation\Limit;
-use OpenApi\Attributes as OA;
 use support\Request;
 use support\Response;
 
@@ -44,48 +43,6 @@ class AccountController
   /**
    * 注册（bcrypt 密码, 注册即登录）
    */
-  #[OA\Post(
-    path: '/api/account/register',
-    operationId: 'accountRegister',
-    summary: '注册并自动登录',
-    tags: ['账号'],
-    security: [],
-    description: '若邮箱已发送验证码则必须匹配 code；未发送时当前实现放行。密码至少六字节。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountRegisterRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountRegisterRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountLoginResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function register(Request $request): Response
   {
     $post = $request->post();
@@ -167,58 +124,6 @@ class AccountController
    * 同邮箱 60 秒冷却; 验证码 10 分钟有效; debug 模式下发送失败会回传 debug_code 供联调
    */
   #[Limit(limit: 5, ttl: 60, message: '发送过于频繁,请稍后再试!')]
-  #[OA\Post(
-    path: '/api/account/send-email-code',
-    operationId: 'accountSendEmailCode',
-    summary: '发送注册邮箱验证码',
-    tags: ['账号'],
-    security: [],
-    description: '同邮箱冷却六十秒，验证码十分钟有效。邮件失败且 debug 开启时返回 debug_code。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountEmailRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountEmailRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountEmailCodeResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 500,
-        description: '注解限流异常由现有 ApiHandler 转成 500',
-        content: new OA\MediaType(
-          mediaType: 'text/html',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountUnhandledErrorBody',
-          ),
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function send_email_code(Request $request): Response
   {
     $email = trim((string) $request->post('email', ''));
@@ -265,100 +170,6 @@ class AccountController
    * 登录（每次登录创建独立会话, 多设备并存）
    * 可选图片验证码: 请求带 captcha {challengeId, answer} 时校验（用户侧网站登录流）
    */
-  #[OA\Post(
-    path: '/api/account/login',
-    operationId: 'accountLogin',
-    summary: '登录并创建独立会话',
-    tags: ['账号'],
-    security: [],
-    description: '图片验证码五分钟有效且一次性；此路径必填 captcha。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(
-          ref: '#/components/schemas/AccountAdminLoginRequest',
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountAdminLoginRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountLoginResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 422,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
-  #[OA\Post(
-    path: '/api/auth/login',
-    operationId: 'authLogin',
-    summary: '登录并创建独立会话',
-    tags: ['账号'],
-    security: [],
-    description: 'captcha 可选；提供后进行一次性校验。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountLoginRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountLoginRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountLoginResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 422,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function login(Request $request): Response
   {
     $email = trim((string) $request->post('email'));
@@ -419,64 +230,6 @@ class AccountController
   /**
    * 登出（撤销当前会话, token 立即失效）
    */
-  #[OA\Post(
-    path: '/api/account/logout',
-    operationId: 'accountLogout',
-    summary: '撤销当前会话',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountEmptyResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
-  #[OA\Post(
-    path: '/api/auth/logout',
-    operationId: 'authLogout',
-    summary: '撤销当前会话',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountEmptyResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function logout(Request $request): Response
   {
     $sid = (int) ($request->sid ?? 0);
@@ -493,64 +246,6 @@ class AccountController
   /**
    * 当前登录用户信息
    */
-  #[OA\Get(
-    path: '/api/account/me',
-    operationId: 'accountMe',
-    summary: '当前登录用户',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountMeResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
-  #[OA\Get(
-    path: '/api/auth/me',
-    operationId: 'authMe',
-    summary: '当前登录用户',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountMeResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function me(Request $request): Response
   {
     $user = UserModel::find($request->uid);
@@ -565,51 +260,6 @@ class AccountController
    * 支持: nickname(显示名) / qq(可 null 清空) / avatar(null 清除头像恢复默认)
    * fivemId 不允许在此设置——游戏身份必须走绑定码/SSO 绑定流程
    */
-  #[OA\Patch(
-    path: '/api/auth/me',
-    operationId: 'authUpdateProfile',
-    summary: '更新昵称、QQ 或清除头像',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountProfileRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountProfileRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountMeResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function profile_update(Request $request): Response
   {
     $post = $request->post();
@@ -667,55 +317,6 @@ class AccountController
   /**
    * 上传头像（用户侧网站对接, base64 图片统一转 WebP 存储）
    */
-  #[OA\Post(
-    path: '/api/auth/me/avatar',
-    operationId: 'authUploadAvatar',
-    summary: '上传头像并转换为 WebP',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountAvatarRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountAvatarRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountMeResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 413,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function avatar_upload(Request $request): Response
   {
     $post = $request->post();
@@ -772,44 +373,6 @@ class AccountController
   /**
    * 读取头像图片（公开, /api/avatars/{avatarId}）
    */
-  #[OA\Get(
-    path: '/api/avatars/{avatarId}',
-    operationId: 'accountAvatarImage',
-    summary: '读取 WebP 头像',
-    tags: ['账号'],
-    security: [],
-    parameters: [
-      new OA\Parameter(
-        name: 'avatarId',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string', pattern: '^[A-Za-z0-9_-]{43}$'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: 'WebP 图片字节',
-        content: new OA\MediaType(
-          mediaType: 'image/webp',
-          schema: new OA\Schema(type: 'string', format: 'binary'),
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 404,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function avatar_image(Request $request, string $avatarId): Response
   {
     $avatarId = (string) $avatarId;
@@ -869,42 +432,6 @@ class AccountController
    * 图片验证码挑战（登录/注册流共用, 5 分钟一次性）
    */
   #[Limit(limit: 10, ttl: 60, message: '请求过于频繁,请稍后再试!')]
-  #[OA\Post(
-    path: '/api/auth/captcha/challenges',
-    operationId: 'authCaptchaChallenge',
-    summary: '创建一次性图片验证码',
-    tags: ['账号'],
-    security: [],
-    description: '五分钟有效；返回 PNG base64 字节，无 data: 前缀。',
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountCaptchaResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 500,
-        description: '注解限流异常由现有 ApiHandler 转成 500',
-        content: new OA\MediaType(
-          mediaType: 'text/html',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountUnhandledErrorBody',
-          ),
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function captcha_challenge(Request $request): Response
   {
     return success(CaptchaService::create());
@@ -913,51 +440,6 @@ class AccountController
   /**
    * 资格检查（未注册邮箱即符合邀请条件）
    */
-  #[OA\Post(
-    path: '/api/auth/invitations/check',
-    operationId: 'authInvitationCheck',
-    summary: '检查邀请注册资格',
-    tags: ['账号'],
-    security: [],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountEmailRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountEmailRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountInvitationCheckResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 409,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function invitation_check(Request $request): Response
   {
     $email = trim((string) $request->post('email'));
@@ -967,66 +449,6 @@ class AccountController
   /**
    * 发送邀请码（6 位, 10 分钟有效, 60 秒冷却）
    */
-  #[OA\Post(
-    path: '/api/auth/invitations/code',
-    operationId: 'authInvitationCode',
-    summary: '发送邀请码',
-    tags: ['账号'],
-    security: [],
-    description: '验证码十分钟有效，发送冷却六十秒；429 响应带 Retry-After 秒数。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountEmailRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountEmailRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 202,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountInvitationCodeResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 429,
-        description: '发送冷却或连续失败锁定',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-        headers: [
-          new OA\Header(
-            header: 'Retry-After',
-            description: '剩余等待秒数',
-            schema: new OA\Schema(type: 'integer'),
-          ),
-        ],
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 409,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function invitation_code(Request $request): Response
   {
     $email = trim((string) $request->post('email'));
@@ -1054,68 +476,6 @@ class AccountController
   /**
    * 校验邀请码, 换一次性完成令牌（可带图片验证码防自动注册）
    */
-  #[OA\Post(
-    path: '/api/auth/invitations/verify',
-    operationId: 'authInvitationVerify',
-    summary: '一次性消费邀请码并签发完成令牌',
-    tags: ['账号'],
-    security: [],
-    description: '验证码一次性消费后颁发十分钟一次性完成令牌；连续失败锁定时 429 带 Retry-After 秒数。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(
-          ref: '#/components/schemas/AccountInvitationVerifyRequest',
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountInvitationVerifyRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountInvitationVerifyResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 429,
-        description: '发送冷却或连续失败锁定',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-        headers: [
-          new OA\Header(
-            header: 'Retry-After',
-            description: '剩余等待秒数',
-            schema: new OA\Schema(type: 'integer'),
-          ),
-        ],
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 422,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function invitation_verify(Request $request): Response
   {
     $post = $request->post();
@@ -1147,58 +507,6 @@ class AccountController
   /**
    * 完成注册（令牌一次性, 建账号不自动登录, 前往登录页）
    */
-  #[OA\Post(
-    path: '/api/auth/invitations/complete',
-    operationId: 'authInvitationComplete',
-    summary: '消费完成令牌并注册账号',
-    tags: ['账号'],
-    security: [],
-    description: '成功后不自动登录；完成令牌过期或已消费返回 401。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(
-          ref: '#/components/schemas/AccountInvitationCompleteRequest',
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountInvitationCompleteRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountInvitationCompleteResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 409,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function invitation_complete(Request $request): Response
   {
     $post = $request->post();
@@ -1223,35 +531,6 @@ class AccountController
   /**
    * 我的登录会话列表（多设备/多平台）
    */
-  #[OA\Get(
-    path: '/api/account/sessions',
-    operationId: 'accountSessions',
-    summary: '最近一百条登录会话',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountSessionsResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function sessions(Request $request): Response
   {
     $list = AuthSessionModel::where('user_id', $request->uid)
@@ -1272,47 +551,6 @@ class AccountController
   /**
    * 撤销指定会话（下线某设备）
    */
-  #[OA\Post(
-    path: '/api/account/sessions/{sid}/revoke',
-    operationId: 'accountRevokeSession',
-    summary: '撤销本人指定会话',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountEmptyResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function session_revoke(Request $request, int $sid): Response
   {
     $session = AuthSessionModel::where('id', $sid)
@@ -1333,35 +571,6 @@ class AccountController
   /**
    * 下线除当前会话外的全部设备
    */
-  #[OA\Post(
-    path: '/api/account/sessions/revoke-all',
-    operationId: 'accountRevokeOtherSessions',
-    summary: '撤销除当前以外所有会话',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountRevokeAllResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function session_revoke_all(Request $request): Response
   {
     $count = SessionService::revokeAllForUser(
@@ -1380,35 +589,6 @@ class AccountController
   /**
    * 我授权过的应用列表
    */
-  #[OA\Get(
-    path: '/api/account/grants',
-    operationId: 'accountGrants',
-    summary: '查看本人第三方授权',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountGrantsResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function grants(Request $request): Response
   {
     $grants = OAuthGrantModel::where('user_id', $request->uid)
@@ -1442,47 +622,6 @@ class AccountController
   /**
    * 撤销对某应用的授权（该应用名下我的 token 立即失效）
    */
-  #[OA\Post(
-    path: '/api/account/grants/{client_id}/revoke',
-    operationId: 'accountRevokeGrant',
-    summary: '撤销授权及关联会话',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'client_id',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountRevokedSessionsResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function grant_revoke(Request $request, string $client_id): Response
   {
     if (!OAuthService::revokeGrant((int) $request->uid, $client_id, 'user')) {
@@ -1510,51 +649,6 @@ class AccountController
   /**
    * 修改密码（成功后下线其他全部设备）
    */
-  #[OA\Post(
-    path: '/api/account/password',
-    operationId: 'accountChangePassword',
-    summary: '修改密码并下线其他设备',
-    tags: ['账号'],
-    security: [['sessionAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/AccountPasswordRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/AccountPasswordRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/AccountRevokedSessionsResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function password(Request $request): Response
   {
     $old = (string) $request->post('old_password', '');

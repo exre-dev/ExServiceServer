@@ -2,8 +2,6 @@
 
 namespace app\server;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\middleware\ServerMember;
 use app\common\model\MemberPluginPermModel;
@@ -26,70 +24,6 @@ class PermController
    * 按成员聚合: 指定成员在全部已绑定插件上的权限状态（左右主从布局用）
    * GET /server/{sid}/member-perms?user_id=
    */
-  #[OA\Get(
-    path: '/api/server/{sid}/member-perms',
-    operationId: 'serverMemberPermissions',
-    summary: '成员全部插件权限',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。目标须为本空间 active 成员；列出全部绑定插件，按绑定 ID 倒序。无覆盖时 allowed=true、features=null；无插件时 list=[] 且 member 不含 avatar。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'user_id',
-        in: 'query',
-        required: true,
-        description: 'active 成员用户 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerMemberPermissionsData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function member_perms(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -179,70 +113,6 @@ class PermController
   /**
    * 权限矩阵: 指定插件的全部 active 成员 × 功能点
    */
-  #[OA\Get(
-    path: '/api/server/{sid}/plugin-perms',
-    operationId: 'serverPermissionMatrix',
-    summary: '插件成员权限矩阵',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。插件必须已在本空间生成绑定码；仅 active 成员，按 role_key 倒序。无覆盖时 allowed=true、features=null；返回绑定码选定字段与完整功能点。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'plugin_id',
-        in: 'query',
-        required: true,
-        description: '已绑定插件 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerPermissionMatrixData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function matrix(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -302,73 +172,6 @@ class PermController
   /**
    * 保存某成员的权限（allowed + 显式功能覆盖; 保存即清缓存, 插件下次心跳生效）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/plugin-perms',
-    operationId: 'serverPermissionSave',
-    summary: '保存成员插件权限',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。插件须已绑定且目标为 active 成员；features 仅保留已知功能键并转换为 bool。保存后清缓存，插件下次同步生效。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(
-          ref: '#/components/schemas/ServerPermissionSaveInput',
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function save(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -440,77 +243,6 @@ class PermController
    * 不点击则等插件心跳自动同步）
    * POST {plugin_id?} 省略则下发本空间全部插件
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/plugin-perms/push',
-    operationId: 'serverPermissionPush',
-    summary: '下发插件权限',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。清缓存并增加权限版本；无可下发绑定返回 400。EXCore >=1.1 可检测版本并拉取，旧版等待心跳。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: false,
-      content: [
-        new OA\JsonContent(
-          ref: '#/components/schemas/ServerPermissionPushInput',
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/ServerPermissionPushInput',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerPermissionPushData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function push(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -552,79 +284,6 @@ class PermController
   /**
    * 恢复默认（删除该成员此插件的用户级覆盖 → 继承绑定码全量）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/plugin-perms/reset',
-    operationId: 'serverPermissionReset',
-    summary: '恢复成员插件默认权限',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。插件须已绑定；删除目标用户对该插件的覆盖并清缓存，未额外校验目标成员存在。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(
-          ref: '#/components/schemas/ServerPermissionTargetInput',
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/ServerPermissionTargetInput',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function reset(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);

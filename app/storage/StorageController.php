@@ -4,7 +4,6 @@ namespace app\storage;
 
 use app\common\exception\ApiException;
 use app\common\services\StorageService;
-use OpenApi\Attributes as OA;
 use support\Request;
 use support\Response;
 
@@ -22,56 +21,6 @@ class StorageController
   /**
    * 上传计划（file 介质: 只返回字节上限, 不签发凭据）
    */
-  #[OA\Post(
-    path: '/api/storage/uploads/prepare',
-    operationId: 'storagePrepare',
-    summary: '本地文件上传计划',
-    tags: ['存储'],
-    security: [['sessionAuth' => []]],
-    description: 'file 介质返回二十 MiB 上限；cos 未启用，返回 503。',
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/StoragePrepareRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/StoragePrepareRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/StoragePrepareResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 413,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/BusinessError',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function prepare(Request $request): Response
   {
     $post = $request->post();
@@ -104,54 +53,6 @@ class StorageController
   /**
    * 服务端中转上传（multipart: data 文件 + key/medium/contentType 文本字段）
    */
-  #[OA\Post(
-    path: '/api/storage/uploads',
-    operationId: 'storageUpload',
-    summary: '上传本地文件',
-    tags: ['存储'],
-    security: [['sessionAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'multipart/form-data',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/StorageUploadRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/StorageUploadResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 413,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/BusinessError',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function upload(Request $request): Response
   {
     $key = (string) $request->post('key', '');
@@ -198,33 +99,6 @@ class StorageController
   /**
    * COS 直传确认（本部署未启用）
    */
-  #[OA\Post(
-    path: '/api/storage/uploads/complete',
-    operationId: 'storageComplete',
-    summary: 'COS 上传确认（未启用）',
-    tags: ['存储'],
-    security: [['sessionAuth' => []]],
-    description: '当前部署始终返回 503 与 {msg} 错误体；不解析请求字段。',
-    responses: [
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/BusinessError',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function complete(Request $request): Response
   {
     throw new ApiException('cos 介质未启用', 503);
@@ -233,59 +107,6 @@ class StorageController
   /**
    * 公开读取（octet-stream + attachment, 禁嗅探）
    */
-  #[OA\Get(
-    path: '/api/storage/files',
-    operationId: 'storageReadFile',
-    summary: '公开下载本地文件',
-    tags: ['存储'],
-    security: [],
-    parameters: [
-      new OA\Parameter(
-        name: 'key',
-        in: 'query',
-        required: true,
-        schema: new OA\Schema(type: 'string'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '文件字节；统一以 octet-stream 下载',
-        headers: [
-          new OA\Header(
-            header: 'Content-Disposition',
-            description: 'attachment; filename=文件名',
-            schema: new OA\Schema(type: 'string'),
-          ),
-          new OA\Header(
-            header: 'X-Content-Type-Options',
-            schema: new OA\Schema(type: 'string', enum: ['nosniff']),
-          ),
-          new OA\Header(
-            header: 'Cache-Control',
-            schema: new OA\Schema(type: 'string', enum: ['no-store']),
-          ),
-        ],
-        content: new OA\MediaType(
-          mediaType: 'application/octet-stream',
-          schema: new OA\Schema(type: 'string', format: 'binary'),
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 404,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/BusinessError',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function files(Request $request): Response
   {
     $key = (string) $request->get('key', '');

@@ -8,6 +8,7 @@
 app/            webman 后端（PHP；/api 前缀：account / admin / server / open / oauth / docs）
 config/         后端配置          database/  建库脚本(schema.sql + seed.sql)
 docs/           设计与对接文档     sdk/       FiveM 插件端 EXCore Lua SDK
+api/            手写 OpenAPI 契约（public / internal，各含 paths 与 schemas）
 web/
 ├── admin-web/  管理端 UI（React19 + antd，随本仓库开发，dev :5173）
 └── user-web/   用户侧 UI（ExWebsite，独立项目：自带 .git、独立 exre/hydra 数据库
@@ -20,30 +21,33 @@ web/
 
 ## OpenAPI 接口契约
 
-本 PHP 服务使用 `webman-tech/swagger` 从 Controller 的 PHP Attributes 和 `app/common/openapi/` 的 schema 生成公开版与内部版契约。日常从模块化入口查阅，完整单文件供导入工具或分发：
+本 PHP 服务的接口契约直接维护在 `api/` 的 YAML 中，与 PHP 业务实现分开。接口变更先修改契约，再同步 Controller、路由和调用方：
 
-| 文件 | 使用范围 |
-| --- | --- |
-| `api/public/openapi.yaml` | 公开版入口，包含外部插件、第三方应用与 OAuth 接入入口。 |
+| 文件                        | 使用范围                                                   |
+| --------------------------- | ---------------------------------------------------------- |
+| `api/public/openapi.yaml`   | 公开版入口，包含外部插件、第三方应用与 OAuth 接入入口。    |
 | `api/internal/openapi.yaml` | 内部版入口，包含本站账号、页面、平台与空间管理等其余接口。 |
-| `api/generated/openapi.public.yaml` | 无外部引用的完整公开版，适合对外分发、导入工具或生成客户端。 |
-| `api/generated/openapi.internal.yaml` | 无外部引用的完整内部版。 |
 
-公开版和内部版各自包含 `paths/`、`schemas/`，按业务模块聚合，通过入口的相对 `$ref` 引用。两版业务接口互不重叠，合起来覆盖 Webman 实际注册的全部业务路由；是否公开与是否免登录分别定义。对外交付时可以复制完整 `api/public/` 目录，或只提供完整公开版单文件；模块化入口需连同引用文件一起提供。
+公开版和内部版各自包含 `paths/`、`schemas/`，按业务模块聚合，通过入口的相对 `$ref` 引用。两版业务接口互不重叠，合起来覆盖 Webman 实际注册的全部业务路由；是否公开与是否免登录分别定义。对外交付复制完整 `api/public/` 目录，入口与引用文件一起分发；每版的引用均限制在自己的目录中。
 
-所有 YAML 和生成清单都是产物，接口变更修改 PHP 定义，保留既有 `app/route.php` 显式路由注册。CLI 管理生成物更新与过期文件清理，保留非本工具管理的文件。
+入口、路径和 schema YAML 都是需要评审的契约源文件。Controller 专注业务逻辑，路由仍在 `app/route.php` 显式注册。每个 operation 声明唯一 `operationId` 和匹配所在版本的 `x-audience`；公开范围同时维护 `config/openapi.php` 中的发布策略。
 
-安装 Composer 依赖后，在本仓库根目录运行：
+开发工具需要 Node.js 22.22.1+。在本仓库根目录安装依赖后检查：
 
 ```sh
-composer api:generate
-composer api:lint
-composer api:check
+npm ci
+npm run api:format:check
+npm run api:lint
+composer install
+npm run api:check
+npm run test:api
 ```
 
-generate 更新两版入口、模块文件及完整单文件；lint 检查 PHP 接口定义、路由覆盖和输出引用；check 只读核对完整生成集合是否与 PHP 源一致，包括片段缺失或陈旧。直接执行入口为 `php scripts/openapi.php`，可查看命令帮助。生成不需要启动 Webman、PostgreSQL 或 Redis，也不加载本地 `.env`。插件默认 HTTP 文档入口和业务路由自动注册保持关闭。
+`api:lint` 校验 OpenAPI 结构、模块引用、operation 标识和归属、路径参数及鉴权方案引用；`api:check` 在此基础上加载真实 Webman 路由，核对接口覆盖与公开发布策略。两者均只读，不生成或暂存契约，不需要启动 Webman、PostgreSQL 或 Redis，也不加载本地 `.env`。需要格式化契约时执行 `npm run api:format`。
 
-使用满足当前 Composer lock 的 PHP 运行 Composer 和 CLI。当前锁定依赖要求 PHP 至少 8.4.1；若 PATH 中的 PHP 较旧，使用兼容解释器执行 Composer phar 或直接执行 CLI，不跳过 Composer 平台校验。CLI 检查与真实接口验证的范围见 `TESTING.md`。
+`api:lint` 与契约工具测试只依赖 Node.js；`api:check` 还需要 Composer 依赖及兼容当前 lock 的 PHP（至少 8.4.1）。若 PATH 中的 PHP 较旧，设置 `PHP_BINARY` 为兼容解释器的绝对路径，并使用该解释器执行 Composer phar。静态检查与真实接口验证的范围见 `TESTING.md`。
+
+提交钩子会格式化已暂存的 PHP、JS/TS 与契约 YAML，并运行只读契约检查。相关输入有未暂存修改时会阻止提交，以免检查结果与提交内容不一致；钩子不生成契约，也不自动加入其他文件。
 
 ## 首次部署初始化
 

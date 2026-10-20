@@ -34,8 +34,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 我管理的空间
     tags:
       - 空间管理
@@ -45,8 +44,7 @@
     description: '任意 active 成员可查看；统计 active 成员、全部绑定码及本空间产生的游戏标识。当前返回完整空间模型（含 note）。'
     operationId: serverOverview
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -84,8 +82,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 空间概览
     tags:
       - 空间管理
@@ -94,8 +91,7 @@
     description: '需要当前空间 active 成员身份及 owner 角色；权限或空间不存在按当前实现返回 400。仅处理提供的 name/description/contact_qq/logo，未提供字段保持原值。'
     operationId: serverSettings
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -145,8 +141,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 更新空间设置
     tags:
       - 空间管理
@@ -156,8 +151,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。绑定码按 ID 倒序；完整序列化包含 code、server_key_hash、features 和心跳字段。plugin 仅选取 id/slug/name/status；plugin_options 仅含 online 插件并按名称排序。'
     operationId: serverBindingList
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -195,8 +189,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 绑定码与在线插件选项
     tags:
       - 空间管理
@@ -205,8 +198,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。空间须 active，插件须 online，一空间一插件仅一个绑定码；重复时须重置。'
     operationId: serverBindingCreate
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -253,8 +245,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 生成插件绑定码
     tags:
       - 空间管理
@@ -264,15 +255,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅当前空间绑定，状态改为 disabled 并清理权限缓存；当前实现不额外检查空间或插件状态。'
     operationId: serverBindingDisable
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '插件绑定码记录 ID'
+      - description: '插件绑定码记录 ID'
         in: path
         name: id
         required: true
@@ -313,8 +302,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 停用插件绑定码
     tags:
       - 空间管理
@@ -324,15 +312,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅当前空间绑定，状态改为 active 并清理权限缓存；当前实现不额外检查空间或插件状态。'
     operationId: serverBindingEnable
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '插件绑定码记录 ID'
+      - description: '插件绑定码记录 ID'
         in: path
         name: id
         required: true
@@ -373,8 +359,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 启用插件绑定码
     tags:
       - 空间管理
@@ -384,15 +369,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅当前空间绑定；旧码立即失效，清空 server_key_hash 并设 active，清理权限缓存。'
     operationId: serverBindingReset
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '插件绑定码记录 ID'
+      - description: '插件绑定码记录 ID'
         in: path
         name: id
         required: true
@@ -430,8 +413,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 重置插件绑定码
     tags:
       - 空间管理
@@ -441,8 +423,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅 type=plugin 且归属当前空间的应用，按 ID 倒序；没有 link 时 link_status 默认 active。只返回选定字段，不返回 client_secret_hash。'
     operationId: serverClientList
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -480,8 +461,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 本空间插件应用
     tags:
       - 空间管理
@@ -491,8 +471,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。应用必须归属本空间；已有 link 时仅恢复 active，不清空 disconnected_time；不恢复已撤销会话。'
     operationId: serverClientConnect
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -542,8 +521,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 恢复应用授权
     tags:
       - 空间管理
@@ -553,8 +531,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。应用必须归属本空间；创建/更新 disconnected 关系，并立即撤销该应用名下所有本空间成员的 active 会话（不限成员状态）。'
     operationId: serverClientDisconnect
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -604,8 +581,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 断开应用授权
     tags:
       - 空间管理
@@ -615,8 +591,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅本空间 owner_type=server 分类，按 sort、ID 升序。'
     operationId: serverDocCategoryList
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -654,8 +629,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 空间文档分类
     tags:
       - 空间管理
@@ -664,8 +638,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。分类名 trim 后必填；sort 默认 0。'
     operationId: serverDocCategoryCreate
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -712,8 +685,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 创建空间文档分类
     tags:
       - 空间管理
@@ -723,15 +695,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅删除本空间分类；不存在也成功，数据库外键将关联文档 category_id 置空。'
     operationId: serverDocCategoryDelete
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '分类 ID'
+      - description: '分类 ID'
         in: path
         name: id
         required: true
@@ -772,8 +742,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 删除空间文档分类
     tags:
       - 空间管理
@@ -783,45 +752,39 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅 owner_type=server 且 server_id 为当前空间；按 ID 倒序，含草稿和完整正文。keyword 匹配 title 或 slug。'
     operationId: serverDocList
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '小于 1 归一为 1'
+      - description: '小于 1 归一为 1'
         in: query
         name: page
         required: false
         schema:
           default: 1
           type: integer
-      -
-        description: '归一为 1..50'
+      - description: '归一为 1..50'
         in: query
         name: page_size
         required: false
         schema:
           default: 10
           type: integer
-      -
-        description: 非空时精确过滤状态
+      - description: 非空时精确过滤状态
         in: query
         name: status
         required: false
         schema:
           type: string
-      -
-        description: '大于 0 时过滤分类'
+      - description: '大于 0 时过滤分类'
         in: query
         name: category_id
         required: false
         schema:
           type: integer
-      -
-        description: '标题或 slug 模糊匹配'
+      - description: '标题或 slug 模糊匹配'
         in: query
         name: keyword
         required: false
@@ -859,8 +822,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 本空间文档列表
     tags:
       - 空间管理
@@ -869,8 +831,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。标题必填；visibility 默认为 members。slug 无效或冲突自动生成；roles 至少一个有效角色。'
     operationId: serverDocCreate
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -917,8 +878,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 创建空间文档
     tags:
       - 空间管理
@@ -928,15 +888,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅删除本空间 owner_type=server 文档；目标不存在也返回成功。'
     operationId: serverDocDelete
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '文档 ID'
+      - description: '文档 ID'
         in: path
         name: id
         required: true
@@ -977,8 +935,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 删除空间文档
     tags:
       - 空间管理
@@ -987,15 +944,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅查本空间 owner_type=server 文档，不存在返回 400；有效编辑 version+1，无有效编辑返回原 version；发布状态单独修改。'
     operationId: serverDocUpdate
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '文档 ID'
+      - description: '文档 ID'
         in: path
         name: id
         required: true
@@ -1042,8 +997,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 编辑空间文档
     tags:
       - 空间管理
@@ -1053,15 +1007,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅本空间文档；status 必须为 draft/published；不增加版本号。'
     operationId: serverDocStatus
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '文档 ID'
+      - description: '文档 ID'
         in: path
         name: id
         required: true
@@ -1111,8 +1063,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 修改文档发布状态
     tags:
       - 空间管理
@@ -1122,8 +1073,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅返回 bound_server_id 为当前空间的记录，按 ID 倒序；列表返回完整 ident_value 与精简 user 关系。'
     operationId: serverIdentList
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -1161,8 +1111,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 游戏绑定记录
     tags:
       - 空间管理
@@ -1172,8 +1121,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。ticket 校验归属空间并一次性消费；目标用户须存在，游戏标识全局唯一。已有同用户绑定直接返回空 data 和提示；其他用户绑定或空间 banned 拒绝。无成员关系则自动加入，left 成员重新激活。新绑定仅回显 ident_tail 与用户 ID/昵称。'
     operationId: serverIdentBind
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -1196,10 +1144,8 @@
               properties:
                 data:
                   oneOf:
-                    -
-                      $ref: '../openapi.yaml#/components/schemas/ServerIdentBoundData'
-                    -
-                      items:
+                    - $ref: '../openapi.yaml#/components/schemas/ServerIdentBoundData'
+                    - items:
                         type: string
                       maxItems: 0
                       type: array
@@ -1227,8 +1173,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: '使用游戏 ticket 绑定用户'
     tags:
       - 空间管理
@@ -1238,15 +1183,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅允许删除在本空间产生的标识记录；不存在或其他空间返回 400。'
     operationId: serverIdentUnbind
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '绑定记录 ID'
+      - description: '绑定记录 ID'
         in: path
         name: id
         required: true
@@ -1287,8 +1230,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 解绑游戏标识
     tags:
       - 空间管理
@@ -1298,15 +1240,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。目标须为本空间 active 成员；列出全部绑定插件，按绑定 ID 倒序。无覆盖时 allowed=true、features=null；无插件时 list=[] 且 member 不含 avatar。'
     operationId: serverMemberPermissions
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: 'active 成员用户 ID'
+      - description: 'active 成员用户 ID'
         in: query
         name: user_id
         required: true
@@ -1344,8 +1284,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 成员全部插件权限
     tags:
       - 空间管理
@@ -1355,8 +1294,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。包含 active/banned/left 全部成员，按 ID 倒序，user 仅选取 id/email/username/avatar/qq。'
     operationId: serverMemberList
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -1394,8 +1332,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 成员列表
     tags:
       - 空间管理
@@ -1404,8 +1341,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。keyword 精确匹配邮箱或 QQ；拒绝平台封禁用户、现有 owner 或 banned 成员；仅 owner 可授予 admin。已离开成员重新激活。'
     operationId: serverMemberAdd
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -1455,8 +1391,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 添加或重新激活成员
     tags:
       - 空间管理
@@ -1466,15 +1401,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。状态改为 banned，权限判定按非成员处理。不能操作自己或 owner，admin 只能操作 member。'
     operationId: serverMemberBan
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '目标用户 ID'
+      - description: '目标用户 ID'
         in: path
         name: uid
         required: true
@@ -1515,8 +1448,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 禁用成员
     tags:
       - 空间管理
@@ -1526,15 +1458,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。状态改为 left。不能操作自己或 owner，admin 只能操作 member。'
     operationId: serverMemberRemove
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '目标用户 ID'
+      - description: '目标用户 ID'
         in: path
         name: uid
         required: true
@@ -1575,8 +1505,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 移除成员
     tags:
       - 空间管理
@@ -1586,15 +1515,13 @@
     description: '需要当前空间 active 成员身份及 owner 角色；权限或空间不存在按当前实现返回 400。不能调整 owner；目标用户按当前空间查找。'
     operationId: serverMemberRole
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '目标用户 ID'
+      - description: '目标用户 ID'
         in: path
         name: uid
         required: true
@@ -1644,8 +1571,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 调整成员角色
     tags:
       - 空间管理
@@ -1655,15 +1581,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。目标必须为 banned 且非 owner。当前动作没有禁止操作自己/admin 的额外检查。'
     operationId: serverMemberUnban
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '目标用户 ID'
+      - description: '目标用户 ID'
         in: path
         name: uid
         required: true
@@ -1704,8 +1628,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 解除成员禁用
     tags:
       - 空间管理
@@ -1715,15 +1638,13 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。插件必须已在本空间生成绑定码；仅 active 成员，按 role_key 倒序。无覆盖时 allowed=true、features=null；返回绑定码选定字段与完整功能点。'
     operationId: serverPermissionMatrix
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
         schema:
           type: integer
-      -
-        description: '已绑定插件 ID'
+      - description: '已绑定插件 ID'
         in: query
         name: plugin_id
         required: true
@@ -1761,8 +1682,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 插件成员权限矩阵
     tags:
       - 空间管理
@@ -1771,8 +1691,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。插件须已绑定且目标为 active 成员；features 仅保留已知功能键并转换为 bool。保存后清缓存，插件下次同步生效。'
     operationId: serverPermissionSave
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -1819,8 +1738,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 保存成员插件权限
     tags:
       - 空间管理
@@ -1830,8 +1748,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。清缓存并增加权限版本；无可下发绑定返回 400。EXCore >=1.1 可检测版本并拉取，旧版等待心跳。'
     operationId: serverPermissionPush
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -1878,8 +1795,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 下发插件权限
     tags:
       - 空间管理
@@ -1889,8 +1805,7 @@
     description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。插件须已绑定；删除目标用户对该插件的覆盖并清缓存，未额外校验目标成员存在。'
     operationId: serverPermissionReset
     parameters:
-      -
-        description: '空间 ID'
+      - description: '空间 ID'
         in: path
         name: sid
         required: true
@@ -1940,8 +1855,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 恢复成员插件默认权限
     tags:
       - 空间管理

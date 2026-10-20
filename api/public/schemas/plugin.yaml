@@ -19,8 +19,7 @@ PluginBindSelfResponse:
   properties:
     data:
       oneOf:
-        -
-          properties:
+        - properties:
             ident_tail:
               description: 省略号加标识末尾最多八个字符。
               type: string
@@ -30,8 +29,7 @@ PluginBindSelfResponse:
             - ident_tail
             - joined_server
           type: object
-        -
-          description: '标识已属于当前账号时返回 []，msg 为已绑定提示。'
+        - description: '标识已属于当前账号时返回 []，msg 为已绑定提示。'
           items: {}
           maxItems: 0
           type: array
@@ -86,12 +84,10 @@ PluginBindTicketResponse:
 PluginFeatures:
   description: '功能键到布尔值的映射；PHP 空数组序列化为 []，从 0 开始的连续数字键会序列化为布尔数组。'
   oneOf:
-    -
-      additionalProperties:
+    - additionalProperties:
         type: boolean
       type: object
-    -
-      items:
+    - items:
         type: boolean
       type: array
 PluginLicenseRequest:

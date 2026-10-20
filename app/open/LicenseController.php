@@ -2,8 +2,6 @@
 
 namespace app\open;
 
-use OpenApi\Attributes as OA;
-
 use app\common\model\ServerAccountModel;
 use app\common\services\PermService;
 use support\Redis;
@@ -22,56 +20,6 @@ class LicenseController
 {
   protected $noNeedLogin = '*';
 
-  #[OA\Post(
-    path: '/api/open/license/validate',
-    operationId: 'validatePluginLicense',
-    summary: '校验插件许可与心跳',
-    description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。首次 active 校验锁定服务器哈希并记录心跳；状态 revoked、disabled、expired、plugin_offline、server_suspended、server_mismatch 均为 HTTP 200 data.status。未知绑定码只有 403，不会返回 unknown_code 状态。',
-    tags: ['开放插件'],
-    security: [['bindCodeAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/PluginLicenseRequest',
-          ),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/PluginLicenseRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/PluginLicenseResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function validate(Request $request): Response
   {
     $binding = $request->binding;

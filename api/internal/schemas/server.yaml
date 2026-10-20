@@ -48,12 +48,10 @@ ServerBinding:
     features:
       description: '功能键到布尔值的映射；空映射经 array cast 可输出 []'
       oneOf:
-        -
-          additionalProperties:
+        - additionalProperties:
             type: boolean
           type: object
-        -
-          items:
+        - items:
             type: boolean
           maxItems: 0
           type: array
@@ -66,10 +64,8 @@ ServerBinding:
       type: string
     plugin:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/ServerBindingPlugin'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/ServerBindingPlugin'
+        - enum:
             - null
           nullable: true
           type: object
@@ -225,10 +221,8 @@ ServerIdent:
       type: string
     user:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/ServerUserSummary'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/ServerUserSummary'
+        - enum:
             - null
           nullable: true
           type: object
@@ -313,10 +307,8 @@ ServerMember:
       type: string
     user:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/ServerMemberUser'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/ServerMemberUser'
+        - enum:
             - null
           nullable: true
           type: object
@@ -356,13 +348,11 @@ ServerMemberPermission:
     features:
       description: '功能键到布尔值的映射或布尔数组；连续数字键经 PHP 数组序列化可输出非空数组，null 表示无功能覆盖'
       oneOf:
-        -
-          additionalProperties:
+        - additionalProperties:
             type: boolean
           nullable: true
           type: object
-        -
-          items:
+        - items:
             type: boolean
           type: array
     has_perm_row:
@@ -457,12 +447,10 @@ ServerPermissionBinding:
     features:
       description: '功能键到布尔值的映射；空映射经 array cast 可输出 []'
       oneOf:
-        -
-          additionalProperties:
+        - additionalProperties:
             type: boolean
           type: object
-        -
-          items:
+        - items:
             type: boolean
           maxItems: 0
           type: array
@@ -536,13 +524,11 @@ ServerPermissionRow:
     features:
       description: '功能键到布尔值的映射或布尔数组；连续数字键经 PHP 数组序列化可输出非空数组，null 表示无功能覆盖'
       oneOf:
-        -
-          additionalProperties:
+        - additionalProperties:
             type: boolean
           nullable: true
           type: object
-        -
-          items:
+        - items:
             type: boolean
           type: array
     has_perm_row:
@@ -568,13 +554,11 @@ ServerPermissionSaveInput:
     features:
       description: '功能键到布尔值的映射或布尔数组；连续数字键经 PHP 数组序列化可输出非空数组，null 表示无功能覆盖'
       oneOf:
-        -
-          additionalProperties:
+        - additionalProperties:
             type: boolean
           nullable: true
           type: object
-        -
-          items:
+        - items:
             type: boolean
           type: array
     plugin_id:

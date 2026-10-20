@@ -16,8 +16,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 反馈表单选项及大小上限
     tags:
       - 反馈
@@ -27,8 +26,7 @@
     description: '新建返回 201；同一恢复键重放返回 200。'
     operationId: feedbackPrepare
     parameters:
-      -
-        in: query
+      - in: query
         name: area
         required: false
         schema:
@@ -71,8 +69,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 创建或恢复反馈收取快照
     tags:
       - 反馈
@@ -82,8 +79,7 @@
     description: 按恢复键查反馈
     operationId: feedbackLookup
     parameters:
-      -
-        in: query
+      - in: query
         name: submissionKey
         required: true
         schema:
@@ -104,8 +100,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 按恢复键查本人反馈
     tags:
       - 反馈
@@ -115,8 +110,7 @@
     description: 反馈详情
     operationId: feedbackDetail
     parameters:
-      -
-        in: path
+      - in: path
         name: submissionId
         required: true
         schema:
@@ -137,8 +131,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 本人反馈详情
     tags:
       - 反馈
@@ -148,8 +141,7 @@
     description: 'continue 要求全部附件到位并完成反馈；retry 返回当前快照；expectedRevision 不匹配返回 409。'
     operationId: feedbackAdvance
     parameters:
-      -
-        in: path
+      - in: path
         name: submissionId
         required: true
         schema:
@@ -183,8 +175,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 按修订号推进反馈
     tags:
       - 反馈
@@ -194,14 +185,12 @@
     description: '必须处于 receiving；同一已上传附件返回原快照。新上传字节大小与 SHA-256 必须匹配声明；成功递增 revision。'
     operationId: feedbackUploadAttachment
     parameters:
-      -
-        in: path
+      - in: path
         name: submissionId
         required: true
         schema:
           type: string
-      -
-        in: path
+      - in: path
         name: attachmentId
         required: true
         schema:
@@ -234,8 +223,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 上传声明附件
     tags:
       - 反馈

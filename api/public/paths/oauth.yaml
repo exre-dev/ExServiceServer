@@ -56,10 +56,8 @@
           application/json:
             schema:
               oneOf:
-                -
-                  $ref: '../openapi.yaml#/components/schemas/OAuthTokenResponse'
-                -
-                  $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationPending'
+                - $ref: '../openapi.yaml#/components/schemas/OAuthTokenResponse'
+                - $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationPending'
         description: 操作成功。
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -128,43 +126,37 @@
     description: '免登录返回 HTML；页面自行要求登录并调用内部 authorize-info 与 authorize/confirm。查询参数由 HTML 脚本读取，服务端页面动作本身不校验参数。'
     operationId: showOAuthAuthorizationPage
     parameters:
-      -
-        description: 'HTML 确认页读取的应用标识。'
+      - description: 'HTML 确认页读取的应用标识。'
         in: query
         name: client_id
         required: false
         schema:
           type: string
-      -
-        description: 'HTML 确认页读取的回调地址。'
+      - description: 'HTML 确认页读取的回调地址。'
         in: query
         name: redirect_uri
         required: false
         schema:
           type: string
-      -
-        description: 'HTML 确认页原样传给授权确认接口的状态。'
+      - description: 'HTML 确认页原样传给授权确认接口的状态。'
         in: query
         name: state
         required: false
         schema:
           type: string
-      -
-        description: '空格分隔的申请 scope。'
+      - description: '空格分隔的申请 scope。'
         in: query
         name: scope
         required: false
         schema:
           type: string
-      -
-        description: '可选 PKCE challenge。'
+      - description: '可选 PKCE challenge。'
         in: query
         name: code_challenge
         required: false
         schema:
           type: string
-      -
-        description: 'S256 或 plain。'
+      - description: 'S256 或 plain。'
         in: query
         name: code_challenge_method
         required: false
@@ -217,8 +209,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 显示设备码验证页面
     tags:
       - 'OAuth 页面'

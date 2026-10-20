@@ -2,8 +2,6 @@
 
 namespace app\oauth;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\model\UserModel;
 use app\common\services\AuditService;
@@ -28,55 +26,6 @@ class SsoController
   /**
    * 查询 SSO 请求状态
    */
-  #[OA\Post(
-    path: '/api/auth/sso/inspect',
-    operationId: 'inspectInternalSsoRequest',
-    summary: '查询用户网站 SSO 请求状态',
-    description: '免登录；检查 device/init 返回的 sso_request_id。不存在、格式不匹配或过期均返回 404；时间为 Unix 毫秒。',
-    tags: ['内部 SSO'],
-    security: [],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(ref: '#/components/schemas/SsoRequest'),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(ref: '#/components/schemas/SsoRequest'),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/SsoInspectResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 404,
-        description: 'SSO 请求不存在或已过期。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function inspect(Request $request): Response
   {
     $ssoRequestId = (string) $request->post('ssoRequestId', '');
@@ -99,73 +48,6 @@ class SsoController
    * 凭据登录并完成 SSO 请求（用户在 user-web 界面输入账号密码）
    * 注意: 与普通登录不同, 此处不签发本地会话令牌——仅确认 SSO 请求身份
    */
-  #[OA\Post(
-    path: '/api/auth/sso/login',
-    operationId: 'loginInternalSsoRequest',
-    summary: '使用邮箱密码完成 SSO 授权',
-    description: '免登录；可选图片验证码传入后会校验。凭据错误为 400，用户禁用为 403，SSO 请求不存在或过期为 404，已完成、并发处理或应用停用为 409。本动作只确认设备请求，不签发浏览器本地会话；插件继续轮询 device/token。',
-    tags: ['内部 SSO'],
-    security: [],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(ref: '#/components/schemas/SsoLoginRequest'),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(ref: '#/components/schemas/SsoLoginRequest'),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/SsoCompletedResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 404,
-        description: 'SSO 请求不存在或已过期。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 409,
-        description: '设备请求已完成、已失效、被其他用户处理或应用已停用。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 422,
-        description: '图片验证码不正确或已过期。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function login(Request $request): Response
   {
     $post = $request->post();
@@ -210,73 +92,6 @@ class SsoController
   /**
    * 用已有会话确认 SSO 请求（bearer, CheckLogin 注入 uid）
    */
-  #[OA\Post(
-    path: '/api/auth/sso/confirm',
-    operationId: 'confirmInternalSsoRequest',
-    summary: '使用当前会话确认 SSO 授权',
-    description: '使用 CheckLogin 注入的当前用户身份确认设备请求。请求不存在或过期为 404；已完成、并发处理或应用停用为 409。插件继续轮询 device/token 获取 OAuth 令牌。',
-    tags: ['内部 SSO'],
-    security: [['sessionAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(ref: '#/components/schemas/SsoRequest'),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(ref: '#/components/schemas/SsoRequest'),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/SsoCompletedResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 404,
-        description: 'SSO 请求不存在或已过期。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 409,
-        description: '设备请求已完成、已失效、被其他用户处理或应用已停用。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function confirm(Request $request): Response
   {
     $post = $request->post();

@@ -121,12 +121,10 @@ AdminBindingListItem:
     features:
       description: '功能键到布尔值的映射；空映射经模型 array cast 输出 []'
       oneOf:
-        -
-          additionalProperties:
+        - additionalProperties:
             type: boolean
           type: object
-        -
-          items:
+        - items:
             type: boolean
           maxItems: 0
           type: array
@@ -149,10 +147,8 @@ AdminBindingListItem:
       type: string
     plugin:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminPluginBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminPluginBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -161,10 +157,8 @@ AdminBindingListItem:
       type: integer
     server:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminServerStateBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminServerStateBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -203,12 +197,10 @@ AdminBindingWithPlugin:
     features:
       description: '功能键到布尔值的映射；空映射经模型 array cast 输出 []'
       oneOf:
-        -
-          additionalProperties:
+        - additionalProperties:
             type: boolean
           type: object
-        -
-          items:
+        - items:
             type: boolean
           maxItems: 0
           type: array
@@ -224,10 +216,8 @@ AdminBindingWithPlugin:
       type: string
     plugin:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminPluginBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminPluginBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -296,10 +286,8 @@ AdminClientListItem:
       type: array
     server:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminServerBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminServerBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -542,10 +530,8 @@ AdminFeedbackDetail:
       type: string
     user:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -623,10 +609,8 @@ AdminFeedbackListItem:
       type: string
     user:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -673,10 +657,8 @@ AdminMemberWithServer:
       type: string
     server:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminServerStateBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminServerStateBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -729,10 +711,8 @@ AdminMemberWithUser:
       type: string
     user:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminMemberUser'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminMemberUser'
+        - enum:
             - null
           nullable: true
           type: object
@@ -927,10 +907,8 @@ AdminServerListItem:
       type: string
     owner:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        - enum:
             - null
           nullable: true
           type: object
@@ -991,10 +969,8 @@ AdminServerWithOwner:
       type: string
     owner:
       oneOf:
-        -
-          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
-        -
-          enum:
+        - $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        - enum:
             - null
           nullable: true
           type: object
