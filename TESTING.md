@@ -20,18 +20,40 @@
 | `php tests/registration_email.php` | 真实 PostgreSQL / Redis，邮件使用替身。 |
 | `php tests/installation.php` | 真实 PostgreSQL / Redis，需创建、删除临时数据库的权限。 |
 | `php tests/sso_flow.php` | 真实 PostgreSQL / Redis，使用临时 schema 和 Redis 前缀。 |
+| `php tests/website_http.php` | 真实 Webman 路由及全局/局部中间件的进程内 HTTP 管线，独立 PostgreSQL / Redis、临时 BASE_PATH、邮件记录替身；只接受显式测试变量，不读取项目 `.env`。 |
 | `node tests/installation_browser.mjs` | 初始化向导交互，API 使用 mock。 |
 | `node tests/sso_browser.mjs` | SSO 浏览器流程，连接真实 PostgreSQL / Redis。 |
 
-PHP 脚本需安装 Composer 依赖，并使用兼容当前 lock 的解释器（当前依赖要求至少 PHP 8.4.1）；可用该解释器直接执行 Composer phar 或 `scripts/openapi.php`。数据库测试读取 `.env`，执行前核对目标和权限。浏览器脚本需准备独立的 `web/user-web/`（提供 Playwright）、`web/admin-web/` 的依赖及本机 Chrome / Chromium；`CHROME_BINARY` 可指定浏览器，SSO 脚本还支持 `PHP_BINARY`。
+PHP 脚本需安装 Composer 依赖，并使用兼容当前 lock 的解释器（当前依赖要求至少 PHP 8.4.1）；可用该解释器直接执行 Composer phar 或 `scripts/openapi.php`。旧有 registration、installation、SSO 数据库测试读取 `.env`，执行前核对目标和权限；Website HTTP 测试使用下文独立配置。浏览器脚本需准备独立的 `web/user-web/`（提供 Playwright）、`web/admin-web/` 的依赖及本机 Chrome / Chromium；`CHROME_BINARY` 可指定浏览器，SSO 脚本还支持 `PHP_BINARY`。
 
 修改接口元数据或 schema 后，运行 `composer api:generate` 更新 `api/public/`、`api/internal/` 的入口与模块片段，以及 `api/generated/` 的完整单文件，再运行工具行为测试及 lint/check。修改布局或引用逻辑时，还需验证拆分版合并后的契约与完整文档等价，公开目录可独立解析，不依赖内部版。它们证明契约可生成、归属互斥、路由覆盖及产物一致性；不能代替成功、输入错误、鉴权等真实 HTTP 行为验证。新增或修改业务行为时按影响执行相关接口测试并单独报告。
 
 ## GitHub CI
 
-`.github/workflows/ci.yml` 在面向 `master` 的 PR、`master` 推送和手动触发时运行。使用 PHP 8.4 安装锁定的 Composer 依赖，检查后端 PHP 语法，执行 `composer api:lint`、`composer api:check`，再以独立进程依次运行上表中的 5 个 PHP 测试。`ci-gate` 仅在这些步骤全部成功后通过。
+`.github/workflows/ci.yml` 在面向 `master` 的 PR、`master` 推送和手动触发时运行。使用 PHP 8.4 安装锁定的 Composer 依赖，检查后端 PHP 语法，执行 `composer api:lint`、`composer api:check`，再以独立进程依次运行上表中的 6 个 PHP 测试。`ci-gate` 仅在这些步骤全部成功后通过。
 
 数据库测试连接本次 CI 创建的 PostgreSQL 18、Redis 7.4 临时服务。PostgreSQL 测试账号具有创建和删除临时数据库的权限，测试沿用独立 schema、数据库和 Redis 前缀的隔离与清理规则。CI 不安装前端依赖，不构建或测试 `web/admin-web/`，不运行浏览器测试。
+
+## Website HTTP 隔离夹具
+
+先由测试运行器创建一次性 PostgreSQL 18 和 Redis 7.4 服务及专用数据库，再设置以下变量运行 `php tests/website_http.php`。不得指向开发或部署服务；夹具不创建服务或数据库，不回退读取普通 `PG_*`、`REDIS_*` 或项目 `.env`。
+
+| 变量 | 要求 |
+| --- | --- |
+| `WEBSITE_HTTP_TEST_ENABLED` | 必须为 `1`。 |
+| `WEBSITE_HTTP_TEST_PG_HOST`、`WEBSITE_HTTP_TEST_REDIS_HOST` | 临时服务的回环地址 `127.0.0.1`、`localhost` 或 `::1`。 |
+| `WEBSITE_HTTP_TEST_PG_PORT`、`WEBSITE_HTTP_TEST_REDIS_PORT` | 临时服务映射端口，必须显式提供。 |
+| `WEBSITE_HTTP_TEST_PG_DB` | 已创建的专用数据库，名称匹配 `website_http_test_[a-z0-9_]+`。 |
+| `WEBSITE_HTTP_TEST_PG_USER`、`WEBSITE_HTTP_TEST_PG_PASSWORD` | 专用数据库账号，需具备创建和删除自身 schema 的权限。 |
+| `WEBSITE_HTTP_TEST_REDIS_DATABASE`、`WEBSITE_HTTP_TEST_REDIS_PASSWORD` | 显式 database（0–15）及密码；无密码可写 `__EMPTY__`，兼容 Windows 无法保留空进程变量。 |
+
+夹具在 Composer 加载前创建独占临时 `BASE_PATH`，复制版本化启动配置及真实路由，加载生产 `support/bootstrap.php`，用真实 `Http::onMessage` 执行请求。传输连接只捕获响应，不监听 socket；不使用手工路由或替换业务模型。全局安装保护、登录验证、CORS、限流及局部 PlatformAdmin 均保留。普通用例沿用默认 debug/loopback 限流豁免，另用独立请求 IP 验证限流拒绝分支。邮件仅记录在进程内。
+
+随机 schema、Redis prefix 和 JWT 密钥在首次配置刷新前设置，临时配置包装器保证新连接与后续加载都保留隔离；文件、头像、multipart 和日志写入临时根目录。只从版本化 SQL 提取所需建表与索引定义，不执行整份含 DROP 的 schema 或 seed。`finally` 校验资源名称和路径后分别清理，并核验 schema、Redis namespace 和临时目录已消失；测试运行器负责回收其创建的临时服务和数据库。
+
+覆盖账号登录/退出、资料/头像、邀请注册、通知/偏好、file 上传/下载、反馈收取/附件/完成以及 SSO inspect/login/confirm，检查实际状态、副作用和 401/403/409/413/422 等分支。SSO 通过真实 public device-init 建立请求，保留未登录 `/oauth/device` 的既有 401，不扩展 public token/userinfo 业务。
+
+响应结构直接读取 `api/generated/openapi.internal.yaml`，public SSO setup 单独读取 `api/generated/openapi.public.yaml`，按真实 operation、状态和媒体类型选择 schema。限定校验覆盖对象/数组、必填字段、额外属性、引用、nullable、oneOf、类型/枚举及长度/数量/数值约束，未知语义明确失败；format、示例和描述仅作为注释。负向用例证明错误响应会被拒绝。二进制响应另验字节和相关头。此测试不校验完整 OpenAPI 请求语义，也不代表 socket、常驻 worker、代理、浏览器、SMTP 或部署验收。
 
 ## 用例与数据
 

@@ -97,6 +97,23 @@ jobs:
       - name: Test SSO
         run: php tests/sso_flow.php
 
+      - name: Test Website HTTP pipeline
+        env:
+          WEBSITE_HTTP_TEST_ENABLED: '1'
+          WEBSITE_HTTP_TEST_PG_HOST: 127.0.0.1
+          WEBSITE_HTTP_TEST_PG_PORT: '5432'
+          WEBSITE_HTTP_TEST_PG_DB: website_http_test_ci
+          WEBSITE_HTTP_TEST_PG_USER: postgres
+          WEBSITE_HTTP_TEST_PG_PASSWORD: php-ci-password
+          WEBSITE_HTTP_TEST_REDIS_HOST: 127.0.0.1
+          WEBSITE_HTTP_TEST_REDIS_PORT: '6379'
+          WEBSITE_HTTP_TEST_REDIS_DATABASE: '1'
+          WEBSITE_HTTP_TEST_REDIS_PASSWORD: '__EMPTY__'
+          PGPASSWORD: php-ci-password
+        run: |
+          createdb -h 127.0.0.1 -U postgres website_http_test_ci
+          php tests/website_http.php
+
   ci-gate:
     name: ci-gate
     if: ${{ always() }}
