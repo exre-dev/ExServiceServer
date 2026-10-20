@@ -1,0 +1,679 @@
+components:
+  responses:
+    BusinessError:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessErrorBody'
+      description: '业务错误；HTTP 状态码由接口具体分支决定。'
+    SetupRequired:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessErrorBody'
+      description: 系统尚未初始化。
+      headers:
+        X-Setup-Required:
+          description: '值为 1，提示先完成初始化。'
+          schema:
+            enum:
+              - '1'
+            type: string
+  schemas:
+    AccountAdminLoginRequest:
+      $ref: './schemas/account.yaml#/AccountAdminLoginRequest'
+    AccountAvatarRequest:
+      $ref: './schemas/account.yaml#/AccountAvatarRequest'
+    AccountCaptchaAnswer:
+      $ref: './schemas/account.yaml#/AccountCaptchaAnswer'
+    AccountCaptchaData:
+      $ref: './schemas/account.yaml#/AccountCaptchaData'
+    AccountCaptchaResponse:
+      $ref: './schemas/account.yaml#/AccountCaptchaResponse'
+    AccountEmailCodeResponse:
+      $ref: './schemas/account.yaml#/AccountEmailCodeResponse'
+    AccountEmailRequest:
+      $ref: './schemas/account.yaml#/AccountEmailRequest'
+    AccountEmptyResponse:
+      $ref: './schemas/account.yaml#/AccountEmptyResponse'
+    AccountGrant:
+      $ref: './schemas/account.yaml#/AccountGrant'
+    AccountGrantsData:
+      $ref: './schemas/account.yaml#/AccountGrantsData'
+    AccountGrantsResponse:
+      $ref: './schemas/account.yaml#/AccountGrantsResponse'
+    AccountInvitationCheckData:
+      $ref: './schemas/account.yaml#/AccountInvitationCheckData'
+    AccountInvitationCheckResponse:
+      $ref: './schemas/account.yaml#/AccountInvitationCheckResponse'
+    AccountInvitationCodeData:
+      $ref: './schemas/account.yaml#/AccountInvitationCodeData'
+    AccountInvitationCodeResponse:
+      $ref: './schemas/account.yaml#/AccountInvitationCodeResponse'
+    AccountInvitationCompleteData:
+      $ref: './schemas/account.yaml#/AccountInvitationCompleteData'
+    AccountInvitationCompleteRequest:
+      $ref: './schemas/account.yaml#/AccountInvitationCompleteRequest'
+    AccountInvitationCompleteResponse:
+      $ref: './schemas/account.yaml#/AccountInvitationCompleteResponse'
+    AccountInvitationVerifyData:
+      $ref: './schemas/account.yaml#/AccountInvitationVerifyData'
+    AccountInvitationVerifyRequest:
+      $ref: './schemas/account.yaml#/AccountInvitationVerifyRequest'
+    AccountInvitationVerifyResponse:
+      $ref: './schemas/account.yaml#/AccountInvitationVerifyResponse'
+    AccountLoginData:
+      $ref: './schemas/account.yaml#/AccountLoginData'
+    AccountLoginRequest:
+      $ref: './schemas/account.yaml#/AccountLoginRequest'
+    AccountLoginResponse:
+      $ref: './schemas/account.yaml#/AccountLoginResponse'
+    AccountLoginUser:
+      $ref: './schemas/account.yaml#/AccountLoginUser'
+    AccountMeData:
+      $ref: './schemas/account.yaml#/AccountMeData'
+    AccountMeResponse:
+      $ref: './schemas/account.yaml#/AccountMeResponse'
+    AccountPasswordRequest:
+      $ref: './schemas/account.yaml#/AccountPasswordRequest'
+    AccountProfileRequest:
+      $ref: './schemas/account.yaml#/AccountProfileRequest'
+    AccountRegisterRequest:
+      $ref: './schemas/account.yaml#/AccountRegisterRequest'
+    AccountRevokeAllData:
+      $ref: './schemas/account.yaml#/AccountRevokeAllData'
+    AccountRevokeAllResponse:
+      $ref: './schemas/account.yaml#/AccountRevokeAllResponse'
+    AccountRevokedSessionsData:
+      $ref: './schemas/account.yaml#/AccountRevokedSessionsData'
+    AccountRevokedSessionsResponse:
+      $ref: './schemas/account.yaml#/AccountRevokedSessionsResponse'
+    AccountSession:
+      $ref: './schemas/account.yaml#/AccountSession'
+    AccountSessionsData:
+      $ref: './schemas/account.yaml#/AccountSessionsData'
+    AccountSessionsResponse:
+      $ref: './schemas/account.yaml#/AccountSessionsResponse'
+    AccountUnhandledErrorBody:
+      $ref: './schemas/account.yaml#/AccountUnhandledErrorBody'
+    AdminAffected:
+      $ref: './schemas/admin.yaml#/AdminAffected'
+    AdminAuditLog:
+      $ref: './schemas/admin.yaml#/AdminAuditLog'
+    AdminAuthSession:
+      $ref: './schemas/admin.yaml#/AdminAuthSession'
+    AdminBindingListItem:
+      $ref: './schemas/admin.yaml#/AdminBindingListItem'
+    AdminBindingWithPlugin:
+      $ref: './schemas/admin.yaml#/AdminBindingWithPlugin'
+    AdminClientCreated:
+      $ref: './schemas/admin.yaml#/AdminClientCreated'
+    AdminClientListItem:
+      $ref: './schemas/admin.yaml#/AdminClientListItem'
+    AdminClientSecret:
+      $ref: './schemas/admin.yaml#/AdminClientSecret'
+    AdminDashboard:
+      $ref: './schemas/admin.yaml#/AdminDashboard'
+    AdminDoc:
+      $ref: './schemas/admin.yaml#/AdminDoc'
+    AdminDocCategory:
+      $ref: './schemas/admin.yaml#/AdminDocCategory'
+    AdminFeedbackAttachment:
+      $ref: './schemas/admin.yaml#/AdminFeedbackAttachment'
+    AdminFeedbackDetail:
+      $ref: './schemas/admin.yaml#/AdminFeedbackDetail'
+    AdminFeedbackForm:
+      $ref: './schemas/admin.yaml#/AdminFeedbackForm'
+    AdminFeedbackListItem:
+      $ref: './schemas/admin.yaml#/AdminFeedbackListItem'
+    AdminId:
+      $ref: './schemas/admin.yaml#/AdminId'
+    AdminMemberUser:
+      $ref: './schemas/admin.yaml#/AdminMemberUser'
+    AdminMemberWithServer:
+      $ref: './schemas/admin.yaml#/AdminMemberWithServer'
+    AdminMemberWithUser:
+      $ref: './schemas/admin.yaml#/AdminMemberWithUser'
+    AdminNotificationBatch:
+      $ref: './schemas/admin.yaml#/AdminNotificationBatch'
+    AdminNotificationCreated:
+      $ref: './schemas/admin.yaml#/AdminNotificationCreated'
+    AdminPluginBrief:
+      $ref: './schemas/admin.yaml#/AdminPluginBrief'
+    AdminPluginFeature:
+      $ref: './schemas/admin.yaml#/AdminPluginFeature'
+    AdminPluginListItem:
+      $ref: './schemas/admin.yaml#/AdminPluginListItem'
+    AdminServerBrief:
+      $ref: './schemas/admin.yaml#/AdminServerBrief'
+    AdminServerDetail:
+      $ref: './schemas/admin.yaml#/AdminServerDetail'
+    AdminServerListItem:
+      $ref: './schemas/admin.yaml#/AdminServerListItem'
+    AdminServerStateBrief:
+      $ref: './schemas/admin.yaml#/AdminServerStateBrief'
+    AdminServerWithOwner:
+      $ref: './schemas/admin.yaml#/AdminServerWithOwner'
+    AdminSsoRequest:
+      $ref: './schemas/admin.yaml#/AdminSsoRequest'
+    AdminTagIds:
+      $ref: './schemas/admin.yaml#/AdminTagIds'
+    AdminTagListItem:
+      $ref: './schemas/admin.yaml#/AdminTagListItem'
+    AdminUser:
+      $ref: './schemas/admin.yaml#/AdminUser'
+    AdminUserBrief:
+      $ref: './schemas/admin.yaml#/AdminUserBrief'
+    AdminUserDetail:
+      $ref: './schemas/admin.yaml#/AdminUserDetail'
+    AdminVersion:
+      $ref: './schemas/admin.yaml#/AdminVersion'
+    BusinessErrorBody:
+      $ref: './schemas/common.yaml#/BusinessErrorBody'
+    ContentBrowseData:
+      $ref: './schemas/content.yaml#/ContentBrowseData'
+    ContentCategoriesData:
+      $ref: './schemas/content.yaml#/ContentCategoriesData'
+    ContentCategory:
+      $ref: './schemas/content.yaml#/ContentCategory'
+    ContentCategoryInput:
+      $ref: './schemas/content.yaml#/ContentCategoryInput'
+    ContentDocStatusInput:
+      $ref: './schemas/content.yaml#/ContentDocStatusInput'
+    ContentDocument:
+      $ref: './schemas/content.yaml#/ContentDocument'
+    ContentDocumentSummary:
+      $ref: './schemas/content.yaml#/ContentDocumentSummary'
+    ContentManagedDocsData:
+      $ref: './schemas/content.yaml#/ContentManagedDocsData'
+    ContentServerDocCreateInput:
+      $ref: './schemas/content.yaml#/ContentServerDocCreateInput'
+    ContentServerDocUpdateInput:
+      $ref: './schemas/content.yaml#/ContentServerDocUpdateInput'
+    FeedbackActionOption:
+      $ref: './schemas/feedback.yaml#/FeedbackActionOption'
+    FeedbackAdvanceRequest:
+      $ref: './schemas/feedback.yaml#/FeedbackAdvanceRequest'
+    FeedbackAttachment:
+      $ref: './schemas/feedback.yaml#/FeedbackAttachment'
+    FeedbackAttachmentDeclaration:
+      $ref: './schemas/feedback.yaml#/FeedbackAttachmentDeclaration'
+    FeedbackAttachmentUploadRequest:
+      $ref: './schemas/feedback.yaml#/FeedbackAttachmentUploadRequest'
+    FeedbackForm:
+      $ref: './schemas/feedback.yaml#/FeedbackForm'
+    FeedbackKindOption:
+      $ref: './schemas/feedback.yaml#/FeedbackKindOption'
+    FeedbackLimits:
+      $ref: './schemas/feedback.yaml#/FeedbackLimits'
+    FeedbackOptionsData:
+      $ref: './schemas/feedback.yaml#/FeedbackOptionsData'
+    FeedbackOptionsResponse:
+      $ref: './schemas/feedback.yaml#/FeedbackOptionsResponse'
+    FeedbackPrepareRequest:
+      $ref: './schemas/feedback.yaml#/FeedbackPrepareRequest'
+    FeedbackSnapshotData:
+      $ref: './schemas/feedback.yaml#/FeedbackSnapshotData'
+    FeedbackSnapshotResponse:
+      $ref: './schemas/feedback.yaml#/FeedbackSnapshotResponse'
+    NotificationAction:
+      $ref: './schemas/notification.yaml#/NotificationAction'
+    NotificationClearAllData:
+      $ref: './schemas/notification.yaml#/NotificationClearAllData'
+    NotificationClearAllRequest:
+      $ref: './schemas/notification.yaml#/NotificationClearAllRequest'
+    NotificationClearAllResponse:
+      $ref: './schemas/notification.yaml#/NotificationClearAllResponse'
+    NotificationClearPreviewData:
+      $ref: './schemas/notification.yaml#/NotificationClearPreviewData'
+    NotificationClearPreviewResponse:
+      $ref: './schemas/notification.yaml#/NotificationClearPreviewResponse'
+    NotificationContent:
+      $ref: './schemas/notification.yaml#/NotificationContent'
+    NotificationDetailData:
+      $ref: './schemas/notification.yaml#/NotificationDetailData'
+    NotificationDetailResponse:
+      $ref: './schemas/notification.yaml#/NotificationDetailResponse'
+    NotificationItem:
+      $ref: './schemas/notification.yaml#/NotificationItem'
+    NotificationListData:
+      $ref: './schemas/notification.yaml#/NotificationListData'
+    NotificationListResponse:
+      $ref: './schemas/notification.yaml#/NotificationListResponse'
+    NotificationNavigationTarget:
+      $ref: './schemas/notification.yaml#/NotificationNavigationTarget'
+    NotificationOptionalCategories:
+      $ref: './schemas/notification.yaml#/NotificationOptionalCategories'
+    NotificationPreferencesData:
+      $ref: './schemas/notification.yaml#/NotificationPreferencesData'
+    NotificationPreferencesRequest:
+      $ref: './schemas/notification.yaml#/NotificationPreferencesRequest'
+    NotificationPreferencesResponse:
+      $ref: './schemas/notification.yaml#/NotificationPreferencesResponse'
+    NotificationReadAllData:
+      $ref: './schemas/notification.yaml#/NotificationReadAllData'
+    NotificationReadAllRequest:
+      $ref: './schemas/notification.yaml#/NotificationReadAllRequest'
+    NotificationReadAllResponse:
+      $ref: './schemas/notification.yaml#/NotificationReadAllResponse'
+    NotificationStateData:
+      $ref: './schemas/notification.yaml#/NotificationStateData'
+    NotificationStateRequest:
+      $ref: './schemas/notification.yaml#/NotificationStateRequest'
+    NotificationStateResponse:
+      $ref: './schemas/notification.yaml#/NotificationStateResponse'
+    NotificationSummaryData:
+      $ref: './schemas/notification.yaml#/NotificationSummaryData'
+    NotificationSummaryResponse:
+      $ref: './schemas/notification.yaml#/NotificationSummaryResponse'
+    OAuthAuthorizationConfirmRequest:
+      $ref: './schemas/oauth.yaml#/OAuthAuthorizationConfirmRequest'
+    OAuthAuthorizationConfirmResponse:
+      $ref: './schemas/oauth.yaml#/OAuthAuthorizationConfirmResponse'
+    OAuthAuthorizationInfoResponse:
+      $ref: './schemas/oauth.yaml#/OAuthAuthorizationInfoResponse'
+    OAuthAuthorizationInfoResponseData:
+      $ref: './schemas/oauth.yaml#/OAuthAuthorizationInfoResponseData'
+    OAuthDeviceVerifyRequest:
+      $ref: './schemas/oauth.yaml#/OAuthDeviceVerifyRequest'
+    OAuthDeviceVerifyResponse:
+      $ref: './schemas/oauth.yaml#/OAuthDeviceVerifyResponse'
+    ServerAccount:
+      $ref: './schemas/server.yaml#/ServerAccount'
+    ServerBinding:
+      $ref: './schemas/server.yaml#/ServerBinding'
+    ServerBindingCodeData:
+      $ref: './schemas/server.yaml#/ServerBindingCodeData'
+    ServerBindingPlugin:
+      $ref: './schemas/server.yaml#/ServerBindingPlugin'
+    ServerBindingsData:
+      $ref: './schemas/server.yaml#/ServerBindingsData'
+    ServerBoundUser:
+      $ref: './schemas/server.yaml#/ServerBoundUser'
+    ServerClient:
+      $ref: './schemas/server.yaml#/ServerClient'
+    ServerClientInput:
+      $ref: './schemas/server.yaml#/ServerClientInput'
+    ServerClientsData:
+      $ref: './schemas/server.yaml#/ServerClientsData'
+    ServerCreatedIdData:
+      $ref: './schemas/server.yaml#/ServerCreatedIdData'
+    ServerFeature:
+      $ref: './schemas/server.yaml#/ServerFeature'
+    ServerFeatureSummary:
+      $ref: './schemas/server.yaml#/ServerFeatureSummary'
+    ServerIdent:
+      $ref: './schemas/server.yaml#/ServerIdent'
+    ServerIdentBindInput:
+      $ref: './schemas/server.yaml#/ServerIdentBindInput'
+    ServerIdentBoundData:
+      $ref: './schemas/server.yaml#/ServerIdentBoundData'
+    ServerIdentsData:
+      $ref: './schemas/server.yaml#/ServerIdentsData'
+    ServerManagedSpace:
+      $ref: './schemas/server.yaml#/ServerManagedSpace'
+    ServerMember:
+      $ref: './schemas/server.yaml#/ServerMember'
+    ServerMemberAddInput:
+      $ref: './schemas/server.yaml#/ServerMemberAddInput'
+    ServerMemberPermission:
+      $ref: './schemas/server.yaml#/ServerMemberPermission'
+    ServerMemberPermissionsData:
+      $ref: './schemas/server.yaml#/ServerMemberPermissionsData'
+    ServerMemberRoleInput:
+      $ref: './schemas/server.yaml#/ServerMemberRoleInput'
+    ServerMemberUser:
+      $ref: './schemas/server.yaml#/ServerMemberUser'
+    ServerMembersData:
+      $ref: './schemas/server.yaml#/ServerMembersData'
+    ServerMineData:
+      $ref: './schemas/server.yaml#/ServerMineData'
+    ServerOverviewData:
+      $ref: './schemas/server.yaml#/ServerOverviewData'
+    ServerPermissionBinding:
+      $ref: './schemas/server.yaml#/ServerPermissionBinding'
+    ServerPermissionMatrixData:
+      $ref: './schemas/server.yaml#/ServerPermissionMatrixData'
+    ServerPermissionMember:
+      $ref: './schemas/server.yaml#/ServerPermissionMember'
+    ServerPermissionPushData:
+      $ref: './schemas/server.yaml#/ServerPermissionPushData'
+    ServerPermissionPushInput:
+      $ref: './schemas/server.yaml#/ServerPermissionPushInput'
+    ServerPermissionRow:
+      $ref: './schemas/server.yaml#/ServerPermissionRow'
+    ServerPermissionSaveInput:
+      $ref: './schemas/server.yaml#/ServerPermissionSaveInput'
+    ServerPermissionTargetInput:
+      $ref: './schemas/server.yaml#/ServerPermissionTargetInput'
+    ServerPluginIdInput:
+      $ref: './schemas/server.yaml#/ServerPluginIdInput'
+    ServerPluginOption:
+      $ref: './schemas/server.yaml#/ServerPluginOption'
+    ServerSettingsInput:
+      $ref: './schemas/server.yaml#/ServerSettingsInput'
+    ServerUserSummary:
+      $ref: './schemas/server.yaml#/ServerUserSummary'
+    ServerVersionData:
+      $ref: './schemas/server.yaml#/ServerVersionData'
+    SsoCaptcha:
+      $ref: './schemas/sso.yaml#/SsoCaptcha'
+    SsoCompletedResponse:
+      $ref: './schemas/sso.yaml#/SsoCompletedResponse'
+    SsoInspectResponse:
+      $ref: './schemas/sso.yaml#/SsoInspectResponse'
+    SsoLoginRequest:
+      $ref: './schemas/sso.yaml#/SsoLoginRequest'
+    SsoRequest:
+      $ref: './schemas/sso.yaml#/SsoRequest'
+    StoragePrepareData:
+      $ref: './schemas/storage.yaml#/StoragePrepareData'
+    StoragePrepareRequest:
+      $ref: './schemas/storage.yaml#/StoragePrepareRequest'
+    StoragePrepareResponse:
+      $ref: './schemas/storage.yaml#/StoragePrepareResponse'
+    StorageUploadData:
+      $ref: './schemas/storage.yaml#/StorageUploadData'
+    StorageUploadRequest:
+      $ref: './schemas/storage.yaml#/StorageUploadRequest'
+    StorageUploadResponse:
+      $ref: './schemas/storage.yaml#/StorageUploadResponse'
+    SystemEnvironmentCheck:
+      $ref: './schemas/system.yaml#/SystemEnvironmentCheck'
+    SystemHealthData:
+      $ref: './schemas/system.yaml#/SystemHealthData'
+    SystemInstallAdminInput:
+      $ref: './schemas/system.yaml#/SystemInstallAdminInput'
+    SystemInstallData:
+      $ref: './schemas/system.yaml#/SystemInstallData'
+    SystemInstallDatabaseInput:
+      $ref: './schemas/system.yaml#/SystemInstallDatabaseInput'
+    SystemInstallInput:
+      $ref: './schemas/system.yaml#/SystemInstallInput'
+    SystemInstallRedisInput:
+      $ref: './schemas/system.yaml#/SystemInstallRedisInput'
+    SystemInstallationStatusData:
+      $ref: './schemas/system.yaml#/SystemInstallationStatusData'
+  securitySchemes:
+    sessionAuth:
+      description: '会话 JWT，保留会话撤销和用户状态校验。'
+      scheme: bearer
+      type: http
+info:
+  description: '由 PHP 接口元数据生成；服务器地址相对于当前部署根路径。'
+  title: 'EXRE 社区 API'
+  version: 1.0.0
+openapi: 3.0.3
+paths:
+  /api/account/grants:
+    $ref: './paths/account.yaml#/~1api~1account~1grants'
+  '/api/account/grants/{client_id}/revoke':
+    $ref: './paths/account.yaml#/~1api~1account~1grants~1{client_id}~1revoke'
+  /api/account/login:
+    $ref: './paths/account.yaml#/~1api~1account~1login'
+  /api/account/logout:
+    $ref: './paths/account.yaml#/~1api~1account~1logout'
+  /api/account/me:
+    $ref: './paths/account.yaml#/~1api~1account~1me'
+  /api/account/password:
+    $ref: './paths/account.yaml#/~1api~1account~1password'
+  /api/account/register:
+    $ref: './paths/account.yaml#/~1api~1account~1register'
+  /api/account/send-email-code:
+    $ref: './paths/account.yaml#/~1api~1account~1send-email-code'
+  /api/account/sessions:
+    $ref: './paths/account.yaml#/~1api~1account~1sessions'
+  /api/account/sessions/revoke-all:
+    $ref: './paths/account.yaml#/~1api~1account~1sessions~1revoke-all'
+  '/api/account/sessions/{sid}/revoke':
+    $ref: './paths/account.yaml#/~1api~1account~1sessions~1{sid}~1revoke'
+  /api/admin/bindings:
+    $ref: './paths/admin.yaml#/~1api~1admin~1bindings'
+  '/api/admin/bindings/{id}/revoke':
+    $ref: './paths/admin.yaml#/~1api~1admin~1bindings~1{id}~1revoke'
+  /api/admin/clients:
+    $ref: './paths/admin.yaml#/~1api~1admin~1clients'
+  '/api/admin/clients/{id}/secret-reset':
+    $ref: './paths/admin.yaml#/~1api~1admin~1clients~1{id}~1secret-reset'
+  '/api/admin/clients/{id}/status':
+    $ref: './paths/admin.yaml#/~1api~1admin~1clients~1{id}~1status'
+  /api/admin/dashboard:
+    $ref: './paths/admin.yaml#/~1api~1admin~1dashboard'
+  /api/admin/doc-categories:
+    $ref: './paths/admin.yaml#/~1api~1admin~1doc-categories'
+  '/api/admin/doc-categories/{id}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1doc-categories~1{id}'
+  /api/admin/docs:
+    $ref: './paths/admin.yaml#/~1api~1admin~1docs'
+  '/api/admin/docs/{id}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1docs~1{id}'
+  '/api/admin/docs/{id}/status':
+    $ref: './paths/admin.yaml#/~1api~1admin~1docs~1{id}~1status'
+  /api/admin/feedback:
+    $ref: './paths/admin.yaml#/~1api~1admin~1feedback'
+  '/api/admin/feedback/{id}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1feedback~1{id}'
+  '/api/admin/feedback/{id}/status':
+    $ref: './paths/admin.yaml#/~1api~1admin~1feedback~1{id}~1status'
+  /api/admin/logs:
+    $ref: './paths/admin.yaml#/~1api~1admin~1logs'
+  /api/admin/notifications:
+    $ref: './paths/admin.yaml#/~1api~1admin~1notifications'
+  '/api/admin/notifications/{batch}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1notifications~1{batch}'
+  '/api/admin/notifications/{batch}/expire':
+    $ref: './paths/admin.yaml#/~1api~1admin~1notifications~1{batch}~1expire'
+  /api/admin/plugin-options:
+    $ref: './paths/admin.yaml#/~1api~1admin~1plugin-options'
+  /api/admin/plugins:
+    $ref: './paths/admin.yaml#/~1api~1admin~1plugins'
+  '/api/admin/plugins/{id}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1plugins~1{id}'
+  '/api/admin/plugins/{id}/features':
+    $ref: './paths/admin.yaml#/~1api~1admin~1plugins~1{id}~1features'
+  '/api/admin/plugins/{id}/features/{fid}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1plugins~1{id}~1features~1{fid}'
+  '/api/admin/plugins/{id}/status':
+    $ref: './paths/admin.yaml#/~1api~1admin~1plugins~1{id}~1status'
+  /api/admin/server-options:
+    $ref: './paths/admin.yaml#/~1api~1admin~1server-options'
+  /api/admin/servers:
+    $ref: './paths/admin.yaml#/~1api~1admin~1servers'
+  '/api/admin/servers/{sid}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1servers~1{sid}'
+  '/api/admin/servers/{sid}/status':
+    $ref: './paths/admin.yaml#/~1api~1admin~1servers~1{sid}~1status'
+  /api/admin/sso-requests:
+    $ref: './paths/admin.yaml#/~1api~1admin~1sso-requests'
+  '/api/admin/sso-requests/{deviceCode}/revoke':
+    $ref: './paths/admin.yaml#/~1api~1admin~1sso-requests~1{deviceCode}~1revoke'
+  /api/admin/tags:
+    $ref: './paths/admin.yaml#/~1api~1admin~1tags'
+  '/api/admin/tags/{id}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1tags~1{id}'
+  /api/admin/users:
+    $ref: './paths/admin.yaml#/~1api~1admin~1users'
+  '/api/admin/users/{id}':
+    $ref: './paths/admin.yaml#/~1api~1admin~1users~1{id}'
+  '/api/admin/users/{id}/ban':
+    $ref: './paths/admin.yaml#/~1api~1admin~1users~1{id}~1ban'
+  '/api/admin/users/{id}/platform-role':
+    $ref: './paths/admin.yaml#/~1api~1admin~1users~1{id}~1platform-role'
+  '/api/admin/users/{id}/tags':
+    $ref: './paths/admin.yaml#/~1api~1admin~1users~1{id}~1tags'
+  /api/auth/captcha/challenges:
+    $ref: './paths/account.yaml#/~1api~1auth~1captcha~1challenges'
+  /api/auth/invitations/check:
+    $ref: './paths/account.yaml#/~1api~1auth~1invitations~1check'
+  /api/auth/invitations/code:
+    $ref: './paths/account.yaml#/~1api~1auth~1invitations~1code'
+  /api/auth/invitations/complete:
+    $ref: './paths/account.yaml#/~1api~1auth~1invitations~1complete'
+  /api/auth/invitations/verify:
+    $ref: './paths/account.yaml#/~1api~1auth~1invitations~1verify'
+  /api/auth/login:
+    $ref: './paths/account.yaml#/~1api~1auth~1login'
+  /api/auth/logout:
+    $ref: './paths/account.yaml#/~1api~1auth~1logout'
+  /api/auth/me:
+    $ref: './paths/account.yaml#/~1api~1auth~1me'
+  /api/auth/me/avatar:
+    $ref: './paths/account.yaml#/~1api~1auth~1me~1avatar'
+  /api/auth/sso/confirm:
+    $ref: './paths/oauth.yaml#/~1api~1auth~1sso~1confirm'
+  /api/auth/sso/inspect:
+    $ref: './paths/oauth.yaml#/~1api~1auth~1sso~1inspect'
+  /api/auth/sso/login:
+    $ref: './paths/oauth.yaml#/~1api~1auth~1sso~1login'
+  '/api/avatars/{avatarId}':
+    $ref: './paths/account.yaml#/~1api~1avatars~1{avatarId}'
+  /api/docs:
+    $ref: './paths/docs.yaml#/~1api~1docs'
+  '/api/docs/{slug}':
+    $ref: './paths/docs.yaml#/~1api~1docs~1{slug}'
+  /api/health:
+    $ref: './paths/system.yaml#/~1api~1health'
+  /api/installation/install:
+    $ref: './paths/system.yaml#/~1api~1installation~1install'
+  /api/installation/status:
+    $ref: './paths/system.yaml#/~1api~1installation~1status'
+  /api/notification-preferences:
+    $ref: './paths/notify.yaml#/~1api~1notification-preferences'
+  /api/notifications:
+    $ref: './paths/notify.yaml#/~1api~1notifications'
+  /api/notifications/clear-all:
+    $ref: './paths/notify.yaml#/~1api~1notifications~1clear-all'
+  /api/notifications/clear-preview:
+    $ref: './paths/notify.yaml#/~1api~1notifications~1clear-preview'
+  /api/notifications/read-all:
+    $ref: './paths/notify.yaml#/~1api~1notifications~1read-all'
+  /api/notifications/summary:
+    $ref: './paths/notify.yaml#/~1api~1notifications~1summary'
+  '/api/notifications/{notificationId}':
+    $ref: './paths/notify.yaml#/~1api~1notifications~1{notificationId}'
+  '/api/notifications/{notificationId}/state':
+    $ref: './paths/notify.yaml#/~1api~1notifications~1{notificationId}~1state'
+  /api/oauth/authorize-info:
+    $ref: './paths/oauth.yaml#/~1api~1oauth~1authorize-info'
+  /api/oauth/authorize/confirm:
+    $ref: './paths/oauth.yaml#/~1api~1oauth~1authorize~1confirm'
+  /api/oauth/device/verify:
+    $ref: './paths/oauth.yaml#/~1api~1oauth~1device~1verify'
+  /api/server/mine:
+    $ref: './paths/server.yaml#/~1api~1server~1mine'
+  '/api/server/{sid}':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}'
+  '/api/server/{sid}/bindings':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1bindings'
+  '/api/server/{sid}/bindings/{id}/disable':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1bindings~1{id}~1disable'
+  '/api/server/{sid}/bindings/{id}/enable':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1bindings~1{id}~1enable'
+  '/api/server/{sid}/bindings/{id}/reset':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1bindings~1{id}~1reset'
+  '/api/server/{sid}/clients':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1clients'
+  '/api/server/{sid}/clients/connect':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1clients~1connect'
+  '/api/server/{sid}/clients/disconnect':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1clients~1disconnect'
+  '/api/server/{sid}/doc-categories':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1doc-categories'
+  '/api/server/{sid}/doc-categories/{id}':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1doc-categories~1{id}'
+  '/api/server/{sid}/docs':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1docs'
+  '/api/server/{sid}/docs/{id}':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1docs~1{id}'
+  '/api/server/{sid}/docs/{id}/status':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1docs~1{id}~1status'
+  '/api/server/{sid}/idents':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1idents'
+  '/api/server/{sid}/idents/bind':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1idents~1bind'
+  '/api/server/{sid}/idents/{id}/unbind':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1idents~1{id}~1unbind'
+  '/api/server/{sid}/member-perms':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1member-perms'
+  '/api/server/{sid}/members':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1members'
+  '/api/server/{sid}/members/{uid}/ban':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1members~1{uid}~1ban'
+  '/api/server/{sid}/members/{uid}/remove':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1members~1{uid}~1remove'
+  '/api/server/{sid}/members/{uid}/role':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1members~1{uid}~1role'
+  '/api/server/{sid}/members/{uid}/unban':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1members~1{uid}~1unban'
+  '/api/server/{sid}/plugin-perms':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1plugin-perms'
+  '/api/server/{sid}/plugin-perms/push':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1plugin-perms~1push'
+  '/api/server/{sid}/plugin-perms/reset':
+    $ref: './paths/server.yaml#/~1api~1server~1{sid}~1plugin-perms~1reset'
+  /api/storage/files:
+    $ref: './paths/storage.yaml#/~1api~1storage~1files'
+  /api/storage/uploads:
+    $ref: './paths/storage.yaml#/~1api~1storage~1uploads'
+  /api/storage/uploads/complete:
+    $ref: './paths/storage.yaml#/~1api~1storage~1uploads~1complete'
+  /api/storage/uploads/prepare:
+    $ref: './paths/storage.yaml#/~1api~1storage~1uploads~1prepare'
+  /api/support/feedback/options:
+    $ref: './paths/support.yaml#/~1api~1support~1feedback~1options'
+  /api/support/feedback/submissions:
+    $ref: './paths/support.yaml#/~1api~1support~1feedback~1submissions'
+  /api/support/feedback/submissions/lookup:
+    $ref: './paths/support.yaml#/~1api~1support~1feedback~1submissions~1lookup'
+  '/api/support/feedback/submissions/{submissionId}':
+    $ref: './paths/support.yaml#/~1api~1support~1feedback~1submissions~1{submissionId}'
+  '/api/support/feedback/submissions/{submissionId}/advance':
+    $ref: './paths/support.yaml#/~1api~1support~1feedback~1submissions~1{submissionId}~1advance'
+  '/api/support/feedback/submissions/{submissionId}/attachments/{attachmentId}':
+    $ref: './paths/support.yaml#/~1api~1support~1feedback~1submissions~1{submissionId}~1attachments~1{attachmentId}'
+servers:
+  -
+    url: /
+tags:
+  -
+    description: 账号
+    name: 账号
+  -
+    description: 平台管理端
+    name: 平台管理端
+  -
+    description: 文档浏览
+    name: 文档浏览
+  -
+    description: 通知
+    name: 通知
+  -
+    description: 'OAuth 页面'
+    name: 'OAuth 页面'
+  -
+    description: '内部 OAuth'
+    name: '内部 OAuth'
+  -
+    description: 'OAuth 授权'
+    name: 'OAuth 授权'
+  -
+    description: '内部 SSO'
+    name: '内部 SSO'
+  -
+    description: 开放插件
+    name: 开放插件
+  -
+    description: 'OAuth 用户资源'
+    name: 'OAuth 用户资源'
+  -
+    description: 空间管理
+    name: 空间管理
+  -
+    description: 存储
+    name: 存储
+  -
+    description: 反馈
+    name: 反馈
+  -
+    description: 系统
+    name: 系统

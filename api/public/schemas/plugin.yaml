@@ -1,0 +1,299 @@
+PluginBindSelfRequest:
+  properties:
+    ident:
+      description: 游戏标识；去除两端空白后不能为空。
+      minLength: 1
+      type: string
+    ident_type:
+      default: fivem_license
+      enum:
+        - fivem_license
+        - steam
+        - discord
+        - qq
+      type: string
+  required:
+    - ident
+  type: object
+PluginBindSelfResponse:
+  properties:
+    data:
+      oneOf:
+        -
+          properties:
+            ident_tail:
+              description: 省略号加标识末尾最多八个字符。
+              type: string
+            joined_server:
+              type: boolean
+          required:
+            - ident_tail
+            - joined_server
+          type: object
+        -
+          description: '标识已属于当前账号时返回 []，msg 为已绑定提示。'
+          items: {}
+          maxItems: 0
+          type: array
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+PluginBindTicketRequest:
+  properties:
+    bind_code:
+      description: 'X-Bind-Code 请求头为空时的绑定码回退；请求头非空时优先使用请求头。'
+      type: string
+    ident:
+      description: 游戏标识；去除两端空白后不能为空。
+      minLength: 1
+      type: string
+    ident_type:
+      default: fivem_license
+      enum:
+        - fivem_license
+        - steam
+        - discord
+        - qq
+      type: string
+  required:
+    - ident
+  type: object
+PluginBindTicketResponse:
+  properties:
+    data:
+      properties:
+        expires_in:
+          enum:
+            - 300
+          type: integer
+        ticket:
+          description: 保留前导零的六位数字字符串。
+          pattern: '^[0-9]{6}$'
+          type: string
+      required:
+        - ticket
+        - expires_in
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+PluginFeatures:
+  description: '功能键到布尔值的映射；PHP 空数组序列化为 []，从 0 开始的连续数字键会序列化为布尔数组。'
+  oneOf:
+    -
+      additionalProperties:
+        type: boolean
+      type: object
+    -
+      items:
+        type: boolean
+      type: array
+PluginLicenseRequest:
+  properties:
+    bind_code:
+      description: 'X-Bind-Code 请求头为空时的绑定码回退；请求头非空时优先使用请求头。'
+      type: string
+    server_key_hash:
+      description: 'SDK 发送 sv_licenseKey 的 SHA-256；后端仅校验非空，不强制长度或散列格式。'
+      minLength: 1
+      type: string
+  required:
+    - server_key_hash
+  type: object
+PluginLicenseResponse:
+  properties:
+    data:
+      properties:
+        expires_time:
+          description: '数据库字符串时间；null 或空字符串表示长期，不保证 RFC 3339 格式。'
+          nullable: true
+          type: string
+        features:
+          $ref: '../openapi.yaml#/components/schemas/PluginFeatures'
+        plugin:
+          type: string
+        status:
+          enum:
+            - active
+            - revoked
+            - expired
+            - disabled
+            - server_mismatch
+            - plugin_offline
+            - server_suspended
+          type: string
+        sync_token:
+          description: '用于同步的 MD5 字符串。'
+          type: string
+      required:
+        - status
+        - plugin
+        - features
+        - expires_time
+        - sync_token
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+PluginMemberPermission:
+  properties:
+    allowed:
+      type: boolean
+    features:
+      $ref: '../openapi.yaml#/components/schemas/PluginFeatures'
+    ident:
+      type: string
+  required:
+    - ident
+    - allowed
+    - features
+  type: object
+PluginOAuthIdent:
+  properties:
+    type:
+      type: string
+    value:
+      type: string
+  required:
+    - type
+    - value
+  type: object
+PluginOAuthPermission:
+  properties:
+    allowed:
+      type: boolean
+    features:
+      $ref: '../openapi.yaml#/components/schemas/PluginFeatures'
+    plugin:
+      type: string
+    server:
+      nullable: true
+      type: string
+  required:
+    - server
+    - plugin
+    - allowed
+    - features
+  type: object
+PluginOAuthServer:
+  properties:
+    name:
+      nullable: true
+      type: string
+    role:
+      type: string
+    slug:
+      nullable: true
+      type: string
+  required:
+    - name
+    - slug
+    - role
+  type: object
+PluginOAuthUserInfoResponse:
+  properties:
+    data:
+      properties:
+        avatar:
+          type: string
+        email:
+          description: '仅 user.email scope 返回。'
+          type: string
+        id:
+          type: integer
+        idents:
+          description: '仅 idents.read scope 返回。'
+          items:
+            $ref: '../openapi.yaml#/components/schemas/PluginOAuthIdent'
+          type: array
+        perms:
+          description: '仅 perms.read scope 返回。'
+          items:
+            $ref: '../openapi.yaml#/components/schemas/PluginOAuthPermission'
+          type: array
+        servers:
+          description: '仅 servers.read scope 返回。'
+          items:
+            $ref: '../openapi.yaml#/components/schemas/PluginOAuthServer'
+          type: array
+        username:
+          type: string
+      required:
+        - id
+        - username
+        - avatar
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+PluginPermissionBatchResponse:
+  properties:
+    data:
+      properties:
+        list:
+          items:
+            $ref: '../openapi.yaml#/components/schemas/PluginMemberPermission'
+          type: array
+      required:
+        - list
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+PluginPermissionRevisionResponse:
+  properties:
+    data:
+      properties:
+        rev:
+          type: integer
+      required:
+        - rev
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+PluginTelemetryRequest:
+  properties:
+    bind_code:
+      description: 'X-Bind-Code 请求头为空时的绑定码回退；请求头非空时优先使用请求头。'
+      type: string
+    data:
+      description: '调用方自定义遥测载荷，当前实现不限制结构；省略时为 null。'
+    event:
+      default: ''
+      description: 当前实现不校验必填，省略时记录空字符串。
+      type: string
+    message:
+      default: ''
+      type: string
+  type: object
+PluginTelemetryResponse:
+  properties:
+    data:
+      items: {}
+      maxItems: 0
+      type: array
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object

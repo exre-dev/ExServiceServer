@@ -1,0 +1,242 @@
+/api/support/feedback/options:
+  get:
+    description: '表单选项（本部署全类型可用, 无动态字段）'
+    operationId: feedbackOptions
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/FeedbackOptionsResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 反馈表单选项及大小上限
+    tags:
+      - 反馈
+    x-audience: internal
+/api/support/feedback/submissions:
+  post:
+    description: '新建返回 201；同一恢复键重放返回 200。'
+    operationId: feedbackPrepare
+    parameters:
+      -
+        in: query
+        name: area
+        required: false
+        schema:
+          default: development
+          description: '未识别值回退 development'
+          enum:
+            - development
+            - community
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/FeedbackPrepareRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/FeedbackPrepareRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/FeedbackSnapshotResponse'
+        description: 同一用户与恢复键已存在，返回原快照
+      '201':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/FeedbackSnapshotResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '413':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 创建或恢复反馈收取快照
+    tags:
+      - 反馈
+    x-audience: internal
+/api/support/feedback/submissions/lookup:
+  get:
+    description: 按恢复键查反馈
+    operationId: feedbackLookup
+    parameters:
+      -
+        in: query
+        name: submissionKey
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/FeedbackSnapshotResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 按恢复键查本人反馈
+    tags:
+      - 反馈
+    x-audience: internal
+'/api/support/feedback/submissions/{submissionId}':
+  get:
+    description: 反馈详情
+    operationId: feedbackDetail
+    parameters:
+      -
+        in: path
+        name: submissionId
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/FeedbackSnapshotResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 本人反馈详情
+    tags:
+      - 反馈
+    x-audience: internal
+'/api/support/feedback/submissions/{submissionId}/advance':
+  post:
+    description: 'continue 要求全部附件到位并完成反馈；retry 返回当前快照；expectedRevision 不匹配返回 409。'
+    operationId: feedbackAdvance
+    parameters:
+      -
+        in: path
+        name: submissionId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/FeedbackAdvanceRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/FeedbackAdvanceRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/FeedbackSnapshotResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '409':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 按修订号推进反馈
+    tags:
+      - 反馈
+    x-audience: internal
+'/api/support/feedback/submissions/{submissionId}/attachments/{attachmentId}':
+  put:
+    description: '必须处于 receiving；同一已上传附件返回原快照。新上传字节大小与 SHA-256 必须匹配声明；成功递增 revision。'
+    operationId: feedbackUploadAttachment
+    parameters:
+      -
+        in: path
+        name: submissionId
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: attachmentId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/FeedbackAttachmentUploadRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/FeedbackSnapshotResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '409':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '413':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+    security:
+      -
+        sessionAuth: []
+    summary: 上传声明附件
+    tags:
+      - 反馈
+    x-audience: internal

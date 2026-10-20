@@ -1,0 +1,8 @@
+BusinessErrorBody:
+  properties:
+    msg:
+      description: 中文业务错误消息。
+      type: string
+  required:
+    - msg
+  type: object

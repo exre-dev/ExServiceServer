@@ -1,0 +1,510 @@
+NotificationAction:
+  properties:
+    actionId:
+      type: string
+    emphasis:
+      type: string
+    enabled:
+      type: boolean
+    kind:
+      type: string
+    label:
+      type: string
+    navigationTarget:
+      $ref: '../openapi.yaml#/components/schemas/NotificationNavigationTarget'
+    unavailableReason:
+      enum:
+        - expired
+        - unsupported
+        - null
+      nullable: true
+      type: string
+  required:
+    - actionId
+    - kind
+    - label
+    - emphasis
+    - enabled
+    - unavailableReason
+    - navigationTarget
+  type: object
+NotificationClearAllData:
+  properties:
+    affectedCount:
+      type: integer
+    batchId:
+      type: string
+    replayed:
+      type: boolean
+    requestId:
+      type: string
+    serverTime:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    skippedCount:
+      type: integer
+    unreadCount:
+      type: integer
+  required:
+    - requestId
+    - batchId
+    - affectedCount
+    - skippedCount
+    - unreadCount
+    - replayed
+    - serverTime
+  type: object
+NotificationClearAllRequest:
+  properties:
+    clearSnapshotToken:
+      type: string
+    requestId:
+      description: 十分钟幂等结果键；全部已读与清理共用命名空间
+      type: string
+  required:
+    - requestId
+    - clearSnapshotToken
+  type: object
+NotificationClearAllResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationClearAllData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+NotificationClearPreviewData:
+  properties:
+    batchId:
+      format: uuid
+      type: string
+    clearSnapshotToken:
+      description: 绑定用户、批次及上界，十分钟有效
+      type: string
+    expiresAt:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    itemCount:
+      type: integer
+    serverTime:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    upperSequence:
+      type: integer
+  required:
+    - batchId
+    - itemCount
+    - upperSequence
+    - clearSnapshotToken
+    - expiresAt
+    - serverTime
+  type: object
+NotificationClearPreviewResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationClearPreviewData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+NotificationContent:
+  nullable: true
+  properties:
+    format:
+      enum:
+        - html
+      type: string
+    html:
+      type: string
+    policyVersion:
+      enum:
+        - notification-html-v1
+      type: string
+    schemaVersion:
+      enum:
+        - 1
+      type: integer
+    text:
+      type: string
+  required:
+    - format
+    - schemaVersion
+    - policyVersion
+    - html
+    - text
+  type: object
+NotificationDetailData:
+  properties:
+    actions:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/NotificationAction'
+      type: array
+    actionsAvailable:
+      type: boolean
+    category:
+      enum:
+        - announcement
+        - personal_update
+        - service_notice
+      type: string
+    clearRevision:
+      type: integer
+    clearedAt:
+      enum:
+        - null
+      nullable: true
+      type: integer
+    content:
+      $ref: '../openapi.yaml#/components/schemas/NotificationContent'
+    contentAvailable:
+      type: boolean
+    contentFallbackText:
+      nullable: true
+      type: string
+    deliveredAt:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    lifecycle:
+      enum:
+        - active
+        - expired
+      type: string
+    necessity:
+      enum:
+        - optional
+        - necessary
+      type: string
+    readAt:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      nullable: true
+      type: integer
+    receiptId:
+      format: uuid
+      type: string
+    scope:
+      enum:
+        - community
+        - personal
+      type: string
+    sequence:
+      type: integer
+    serverTime:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    stateRevision:
+      type: integer
+    title:
+      type: string
+  required:
+    - receiptId
+    - title
+    - scope
+    - category
+    - necessity
+    - sequence
+    - deliveredAt
+    - readAt
+    - clearedAt
+    - lifecycle
+    - stateRevision
+    - clearRevision
+    - contentAvailable
+    - content
+    - contentFallbackText
+    - actions
+    - actionsAvailable
+    - serverTime
+  type: object
+NotificationDetailResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationDetailData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+NotificationItem:
+  properties:
+    category:
+      enum:
+        - announcement
+        - personal_update
+        - service_notice
+      type: string
+    deliveredAt:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    expired:
+      type: boolean
+    necessity:
+      enum:
+        - optional
+        - necessary
+      type: string
+    readAt:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      nullable: true
+      type: integer
+    receiptId:
+      description: '实际 PHP 请求与响应结构。'
+      format: uuid
+      type: string
+    scope:
+      enum:
+        - community
+        - personal
+      type: string
+    sequence:
+      type: integer
+    stateRevision:
+      type: integer
+    summaryText:
+      type: string
+    title:
+      type: string
+  required:
+    - receiptId
+    - title
+    - scope
+    - category
+    - necessity
+    - sequence
+    - deliveredAt
+    - readAt
+    - summaryText
+    - expired
+    - stateRevision
+  type: object
+NotificationListData:
+  properties:
+    items:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/NotificationItem'
+      type: array
+    nextCursor:
+      nullable: true
+      type: string
+    readThroughToken:
+      type: string
+    serverTime:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    unreadCount:
+      type: integer
+    upperSequence:
+      type: integer
+  required:
+    - items
+    - nextCursor
+    - unreadCount
+    - upperSequence
+    - readThroughToken
+    - serverTime
+  type: object
+NotificationListResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationListData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+NotificationNavigationTarget:
+  nullable: true
+  properties:
+    kind:
+      enum:
+        - internal
+      type: string
+    path:
+      type: string
+  required:
+    - kind
+    - path
+  type: object
+NotificationOptionalCategories:
+  properties:
+    announcement:
+      type: boolean
+    personal_update:
+      type: boolean
+  required:
+    - announcement
+    - personal_update
+  type: object
+NotificationPreferencesData:
+  properties:
+    necessaryCategories:
+      description: '固定包含 service_notice，不可关闭'
+      items:
+        type: string
+      type: array
+    optionalCategories:
+      $ref: '../openapi.yaml#/components/schemas/NotificationOptionalCategories'
+    revision:
+      type: integer
+    serverTime:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+  required:
+    - revision
+    - optionalCategories
+    - necessaryCategories
+    - serverTime
+  type: object
+NotificationPreferencesRequest:
+  properties:
+    expectedRevision:
+      type: integer
+    optionalCategories:
+      $ref: '../openapi.yaml#/components/schemas/NotificationOptionalCategories'
+  required:
+    - expectedRevision
+    - optionalCategories
+  type: object
+NotificationPreferencesResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationPreferencesData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+NotificationReadAllData:
+  properties:
+    affectedCount:
+      type: integer
+    replayed:
+      type: boolean
+    requestId:
+      type: string
+    serverTime:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    unreadCount:
+      type: integer
+    watermarkSequence:
+      type: integer
+  required:
+    - requestId
+    - affectedCount
+    - watermarkSequence
+    - unreadCount
+    - replayed
+    - serverTime
+  type: object
+NotificationReadAllRequest:
+  properties:
+    readThroughToken:
+      type: string
+    requestId:
+      description: 十分钟幂等结果键；全部已读与清理共用命名空间
+      type: string
+  required:
+    - requestId
+    - readThroughToken
+  type: object
+NotificationReadAllResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationReadAllData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+NotificationStateData:
+  properties:
+    read:
+      type: boolean
+    receiptId:
+      type: string
+    serverTime:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    stateRevision:
+      type: integer
+    unreadCount:
+      type: integer
+  required:
+    - receiptId
+    - read
+    - stateRevision
+    - unreadCount
+    - serverTime
+  type: object
+NotificationStateRequest:
+  properties:
+    expectedRevision:
+      type: integer
+    read:
+      type: boolean
+  required:
+    - read
+    - expectedRevision
+  type: object
+NotificationStateResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationStateData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+NotificationSummaryData:
+  properties:
+    readThroughToken:
+      description: 绑定用户与上界，十分钟有效
+      type: string
+    serverTime:
+      description: 'Unix 时间戳（毫秒）'
+      format: int64
+      type: integer
+    stateVersion:
+      type: integer
+    unreadCount:
+      type: integer
+    upperSequence:
+      type: integer
+  required:
+    - unreadCount
+    - stateVersion
+    - upperSequence
+    - readThroughToken
+    - serverTime
+  type: object
+NotificationSummaryResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/NotificationSummaryData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object

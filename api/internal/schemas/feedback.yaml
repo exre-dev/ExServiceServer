@@ -1,0 +1,318 @@
+FeedbackActionOption:
+  properties:
+    action:
+      enum:
+        - add
+        - modify
+        - delete
+        - other
+      type: string
+    available:
+      type: boolean
+    reason:
+      enum:
+        - null
+      nullable: true
+      type: string
+  required:
+    - action
+    - available
+    - reason
+  type: object
+FeedbackAdvanceRequest:
+  properties:
+    expectedRevision:
+      type: integer
+    intent:
+      enum:
+        - continue
+        - retry
+      type: string
+  required:
+    - expectedRevision
+    - intent
+  type: object
+FeedbackAttachment:
+  properties:
+    byteLength:
+      type: integer
+    contentType:
+      type: string
+    id:
+      format: uuid
+      type: string
+    ordinal:
+      type: integer
+    originalName:
+      type: string
+    remoteAttachmentId:
+      enum:
+        - null
+      nullable: true
+      type: string
+    sha256:
+      type: string
+    status:
+      enum:
+        - expected
+        - uploaded
+      type: string
+  required:
+    - id
+    - ordinal
+    - originalName
+    - contentType
+    - byteLength
+    - sha256
+    - status
+    - remoteAttachmentId
+  type: object
+FeedbackAttachmentDeclaration:
+  properties:
+    byteLength:
+      type: integer
+    contentType:
+      description: '原样声明，存储时截断为 127 字符'
+      type: string
+    id:
+      description: '可选 UUID v4；缺失或无效时由服务端生成'
+      format: uuid
+      type: string
+    originalName:
+      description: '存储时截断为 510 字符'
+      type: string
+    sha256:
+      description: '原始字节 SHA-256 小写摘要'
+      type: string
+  required:
+    - originalName
+    - contentType
+    - byteLength
+    - sha256
+  type: object
+FeedbackAttachmentUploadRequest:
+  properties:
+    file:
+      description: '最多 20MiB；字节数及 SHA-256 须与声明完全一致'
+      format: binary
+      type: string
+  required:
+    - file
+  type: object
+FeedbackForm:
+  additionalProperties: true
+  description: 'PHP 校验 kind/title 并完整保存其他表单字段；JSON 编码后超过 131072 字节返回 413'
+  properties:
+    kind:
+      description: '实际 PHP 请求与响应结构。'
+      enum:
+        - bug
+        - feature
+        - asset
+        - request
+        - content
+        - campaign
+        - suggestion
+        - complaint
+      type: string
+    title:
+      maxLength: 200
+      minLength: 1
+      type: string
+  required:
+    - kind
+    - title
+  type: object
+FeedbackKindOption:
+  properties:
+    available:
+      type: boolean
+    kind:
+      enum:
+        - bug
+        - feature
+        - asset
+        - request
+        - content
+        - campaign
+        - suggestion
+        - complaint
+      type: string
+    reason:
+      enum:
+        - null
+      nullable: true
+      type: string
+  required:
+    - kind
+    - available
+    - reason
+  type: object
+FeedbackLimits:
+  properties:
+    fileBytes:
+      enum:
+        - 20971520
+      type: integer
+    files:
+      enum:
+        - 5
+      type: integer
+    largeFileInfoBytes:
+      enum:
+        - 65536
+      type: integer
+    titleCodePoints:
+      enum:
+        - 200
+      type: integer
+    totalFileBytes:
+      enum:
+        - 104857600
+      type: integer
+    userContentBytes:
+      enum:
+        - 65536
+      type: integer
+  required:
+    - titleCodePoints
+    - userContentBytes
+    - fileBytes
+    - files
+    - totalFileBytes
+    - largeFileInfoBytes
+  type: object
+FeedbackOptionsData:
+  properties:
+    actions:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/FeedbackActionOption'
+      type: array
+    available:
+      type: boolean
+    fields:
+      items:
+        type: string
+      maxItems: 0
+      type: array
+    kinds:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/FeedbackKindOption'
+      type: array
+    limits:
+      $ref: '../openapi.yaml#/components/schemas/FeedbackLimits'
+    reason:
+      enum:
+        - null
+      nullable: true
+      type: string
+  required:
+    - available
+    - reason
+    - fields
+    - kinds
+    - actions
+    - limits
+  type: object
+FeedbackOptionsResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/FeedbackOptionsData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+FeedbackPrepareRequest:
+  properties:
+    attachments:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/FeedbackAttachmentDeclaration'
+      maxItems: 5
+      type: array
+    form:
+      $ref: '../openapi.yaml#/components/schemas/FeedbackForm'
+    submissionKey:
+      description: '客户端 UUID v4；同一用户与键重放返回原快照'
+      format: uuid
+      type: string
+  required:
+    - submissionKey
+    - form
+    - attachments
+  type: object
+FeedbackSnapshotData:
+  properties:
+    attachments:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/FeedbackAttachment'
+      type: array
+    createdAt:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    failure:
+      enum:
+        - null
+      nullable: true
+      type: string
+    form:
+      $ref: '../openapi.yaml#/components/schemas/FeedbackForm'
+    id:
+      format: uuid
+      type: string
+    nextAction:
+      enum:
+        - upload
+        - continue
+        - done
+      type: string
+    receiveExpiresAt:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    revision:
+      type: integer
+    status:
+      enum:
+        - receiving
+        - completed
+      type: string
+    submissionKey:
+      format: uuid
+      type: string
+    taskId:
+      enum:
+        - null
+      nullable: true
+      type: string
+    taskUrl:
+      enum:
+        - null
+      nullable: true
+      type: string
+  required:
+    - id
+    - submissionKey
+    - revision
+    - form
+    - createdAt
+    - receiveExpiresAt
+    - status
+    - nextAction
+    - taskId
+    - taskUrl
+    - failure
+    - attachments
+  type: object
+FeedbackSnapshotResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/FeedbackSnapshotData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object

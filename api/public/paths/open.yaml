@@ -1,0 +1,244 @@
+/api/open/ident/bind-self:
+  post:
+    description: '需要 idents.read scope（缺少时为 400）；已绑定其他账号或空间成员被封禁为 400。插件类应用会把新绑定用户加入所属空间；标识已属于当前账号时返回 data: [] 与重复绑定提示。'
+    operationId: bindOAuthGameIdentity
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginBindSelfRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginBindSelfRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/PluginBindSelfResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        oauthBearer: []
+    summary: '绑定当前 OAuth 用户游戏标识'
+    tags:
+      - 'OAuth 用户资源'
+    x-audience: public
+/api/open/ident/bind-ticket:
+  post:
+    description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。一次性六位数字票据有效 300 秒，由空间管理员录入消费。'
+    operationId: createPluginBindTicket
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginBindTicketRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginBindTicketRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/PluginBindTicketResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        bindCodeAuth: []
+    summary: 生成游戏标识绑定票据
+    tags:
+      - 开放插件
+    x-audience: public
+/api/open/license/validate:
+  post:
+    description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。首次 active 校验锁定服务器哈希并记录心跳；状态 revoked、disabled、expired、plugin_offline、server_suspended、server_mismatch 均为 HTTP 200 data.status。未知绑定码只有 403，不会返回 unknown_code 状态。'
+    operationId: validatePluginLicense
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginLicenseRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginLicenseRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/PluginLicenseResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        bindCodeAuth: []
+    summary: 校验插件许可与心跳
+    tags:
+      - 开放插件
+    x-audience: public
+/api/open/perm/batch:
+  get:
+    description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。GET 推荐使用请求头鉴权；返回全部 active 成员的 fivem_license 标识与最终权限，缓存 60 秒。'
+    operationId: getPluginPermissions
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/PluginPermissionBatchResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        bindCodeAuth: []
+    summary: 批量获取空间成员插件权限
+    tags:
+      - 开放插件
+    x-audience: public
+/api/open/perm/rev:
+  get:
+    description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。GET 推荐使用请求头鉴权；未初始化的权限版本为 0。'
+    operationId: getPluginPermissionRevision
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/PluginPermissionRevisionResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        bindCodeAuth: []
+    summary: 获取权限版本号
+    tags:
+      - 开放插件
+    x-audience: public
+/api/open/telemetry:
+  post:
+    description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。遥测写入本地日志；event、message 与 data 当前均可省略。成功 data 为 []。'
+    operationId: submitPluginTelemetry
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginTelemetryRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/PluginTelemetryRequest'
+      required: false
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/PluginTelemetryResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        bindCodeAuth: []
+    summary: 提交插件遥测事件
+    tags:
+      - 开放插件
+    x-audience: public
+/api/open/userinfo:
+  get:
+    description: 'Bearer 必须对应有效 OAuth 会话、有效应用和未撤销授权。基础字段始终返回；email、idents、servers、perms 分别受 user.email、idents.read、servers.read、perms.read scope 控制。'
+    operationId: getOAuthUserInfo
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/PluginOAuthUserInfoResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        oauthBearer: []
+    summary: '获取 OAuth 用户信息'
+    tags:
+      - 'OAuth 用户资源'
+    x-audience: public

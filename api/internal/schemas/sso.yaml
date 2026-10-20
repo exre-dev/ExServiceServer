@@ -1,0 +1,103 @@
+SsoCaptcha:
+  properties:
+    answer:
+      minLength: 1
+      type: string
+    challengeId:
+      minLength: 1
+      type: string
+  required:
+    - challengeId
+    - answer
+  type: object
+SsoCompletedResponse:
+  properties:
+    data:
+      properties:
+        ssoRequestId:
+          description: '由设备码初始化接口返回的 sso_request_id。'
+          maxLength: 43
+          minLength: 43
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          type: string
+        status:
+          enum:
+            - completed
+          type: string
+      required:
+        - status
+        - ssoRequestId
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+SsoInspectResponse:
+  properties:
+    data:
+      properties:
+        expiresAt:
+          description: 'Unix 毫秒时间。'
+          format: int64
+          type: integer
+        serverTime:
+          description: 'Unix 毫秒时间。'
+          format: int64
+          type: integer
+        ssoRequestId:
+          description: '由设备码初始化接口返回的 sso_request_id。'
+          maxLength: 43
+          minLength: 43
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          type: string
+        status:
+          enum:
+            - pending
+            - completed
+          type: string
+      required:
+        - ssoRequestId
+        - status
+        - expiresAt
+        - serverTime
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+SsoLoginRequest:
+  properties:
+    captcha:
+      $ref: '../openapi.yaml#/components/schemas/SsoCaptcha'
+    email:
+      description: 登录邮箱，去除两端空白。
+      type: string
+    password:
+      type: string
+      writeOnly: true
+    ssoRequestId:
+      description: '由设备码初始化接口返回的 sso_request_id。'
+      maxLength: 43
+      minLength: 43
+      pattern: '^[A-Za-z0-9_-]{43}$'
+      type: string
+  required:
+    - ssoRequestId
+    - email
+    - password
+  type: object
+SsoRequest:
+  properties:
+    ssoRequestId:
+      description: '由设备码初始化接口返回的 sso_request_id。'
+      maxLength: 43
+      minLength: 43
+      pattern: '^[A-Za-z0-9_-]{43}$'
+      type: string
+  required:
+    - ssoRequestId
+  type: object

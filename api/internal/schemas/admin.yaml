@@ -1,0 +1,1165 @@
+AdminAffected:
+  description: 按批次撤回或删除的通知回执数。
+  properties:
+    affected:
+      type: integer
+  required:
+    - affected
+  type: object
+AdminAuditLog:
+  description: '审计日志；detail 为各动作自己的 JSON 详情。'
+  properties:
+    action:
+      description: '动作名,如 user.login / binding.revoke'
+      type: string
+    actor_type:
+      description: '操作者类型: platform/server/user/client'
+      type: string
+    actor_user_id:
+      description: '操作者用户id,系统操作为空'
+      nullable: true
+      type: integer
+    client_id:
+      description: 相关应用client_id
+      nullable: true
+      type: string
+    created_time:
+      description: 记录时间
+      nullable: true
+      type: string
+    detail:
+      additionalProperties: true
+      description: 详情JSON
+      nullable: true
+      type: object
+    id:
+      description: 主键
+      type: integer
+    ip:
+      description: 来源IP
+      type: string
+    server_id:
+      description: 相关空间id
+      nullable: true
+      type: integer
+    target_id:
+      description: 目标id
+      type: string
+    target_type:
+      description: 目标类型
+      type: string
+  type: object
+AdminAuthSession:
+  description: '会话完整字段，包括当前模型未隐藏的 ua_hash。'
+  properties:
+    client_id:
+      description: OAuth时关联的应用client_id
+      nullable: true
+      type: string
+    created_time:
+      description: 登录时间
+      nullable: true
+      type: string
+    device_name:
+      description: 设备名(UA自动识别)
+      type: string
+    expires_time:
+      description: 会话过期时间
+      nullable: true
+      type: string
+    id:
+      description: '会话id,即JWT中的sid'
+      type: integer
+    ip:
+      description: 登录来源IP
+      type: string
+    last_used_time:
+      description: 最近使用时间
+      nullable: true
+      type: string
+    login_type:
+      description: '登录方式: password/oauth'
+      type: string
+    platform:
+      description: '平台: web/fivem/third_party'
+      type: string
+    scope:
+      description: OAuth时授予的scope
+      type: string
+    status:
+      description: '状态: active/revoked/expired'
+      type: string
+    ua_hash:
+      description: UA摘要
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+    user_id:
+      description: 归属用户id
+      type: integer
+  type: object
+AdminBindingListItem:
+  description: '全局绑定码列表；health：inactive 非 active、never 未心跳、stale 超过1800秒、ok 正常。'
+  properties:
+    code:
+      description: '绑定码 EX-XXXX-XXXX-XXXX-XXXX-XXXX'
+      type: string
+    created_by:
+      description: 生成者用户id
+      nullable: true
+      type: integer
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    expires_time:
+      description: '过期时间,空=长期'
+      nullable: true
+      type: string
+    features:
+      description: '功能键到布尔值的映射；空映射经模型 array cast 输出 []'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          type: object
+        -
+          items:
+            type: boolean
+          maxItems: 0
+          type: array
+    health:
+      enum:
+        - inactive
+        - never
+        - stale
+        - ok
+      type: string
+    id:
+      description: 主键
+      type: integer
+    last_heartbeat:
+      description: 最近心跳时间
+      nullable: true
+      type: string
+    last_heartbeat_ip:
+      description: 最近心跳来源IP
+      type: string
+    plugin:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminPluginBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    plugin_id:
+      description: 插件id
+      type: integer
+    server:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminServerStateBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    server_id:
+      description: 空间id
+      type: integer
+    server_key_hash:
+      description: '首次校验锁定的sv_licenseKey SHA-256'
+      type: string
+    status:
+      description: '状态: active/revoked/disabled'
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+  type: object
+AdminBindingWithPlugin:
+  description: 空间详情中的绑定码及关联插件。
+  properties:
+    code:
+      description: '绑定码 EX-XXXX-XXXX-XXXX-XXXX-XXXX'
+      type: string
+    created_by:
+      description: 生成者用户id
+      nullable: true
+      type: integer
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    expires_time:
+      description: '过期时间,空=长期'
+      nullable: true
+      type: string
+    features:
+      description: '功能键到布尔值的映射；空映射经模型 array cast 输出 []'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          type: object
+        -
+          items:
+            type: boolean
+          maxItems: 0
+          type: array
+    id:
+      description: 主键
+      type: integer
+    last_heartbeat:
+      description: 最近心跳时间
+      nullable: true
+      type: string
+    last_heartbeat_ip:
+      description: 最近心跳来源IP
+      type: string
+    plugin:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminPluginBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    plugin_id:
+      description: 插件id
+      type: integer
+    server_id:
+      description: 空间id
+      type: integer
+    server_key_hash:
+      description: '首次校验锁定的sv_licenseKey SHA-256'
+      type: string
+    status:
+      description: '状态: active/revoked/disabled'
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+  type: object
+AdminClientCreated:
+  description: 注册应用结果，明文密钥仅本次返回。
+  properties:
+    client_id:
+      type: string
+    client_secret:
+      description: 明文密钥仅本次返回，请立即保存。
+      type: string
+    id:
+      type: integer
+  required:
+    - id
+    - client_id
+    - client_secret
+  type: object
+AdminClientListItem:
+  description: 应用列表及关联空间，不含密钥哈希。
+  properties:
+    client_id:
+      description: 公开client_id
+      type: string
+    created_by:
+      description: 创建者用户id
+      nullable: true
+      type: integer
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    id:
+      description: 主键
+      type: integer
+    name:
+      description: 应用名称
+      type: string
+    note:
+      description: '对接备注,仅超管可见'
+      type: string
+    redirect_uris:
+      items:
+        type: string
+      type: array
+    scopes:
+      items:
+        type: string
+      type: array
+    server:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminServerBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    server_id:
+      description: 'plugin类应用归属空间id,空=平台级'
+      nullable: true
+      type: integer
+    status:
+      description: '状态: active/suspended'
+      type: string
+    type:
+      description: '类型: third_party/plugin'
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+  type: object
+AdminClientSecret:
+  description: 重置应用密钥结果，旧应用会话全部撤销。
+  properties:
+    client_id:
+      type: string
+    client_secret:
+      description: 明文密钥仅本次返回，请立即保存。
+      type: string
+  required:
+    - client_id
+    - client_secret
+  type: object
+AdminDashboard:
+  description: '平台统计及最近10条审计日志；失联统计仅包括已锁定服务器 hash 的 active 绑定码。'
+  properties:
+    bindings:
+      properties:
+        active:
+          type: integer
+        disabled:
+          type: integer
+        revoked:
+          type: integer
+        stale_heartbeat:
+          type: integer
+      type: object
+    plugins:
+      properties:
+        online:
+          type: integer
+        total:
+          type: integer
+      type: object
+    recent_logs:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AdminAuditLog'
+      type: array
+    servers:
+      properties:
+        active:
+          type: integer
+        closed:
+          type: integer
+        suspended:
+          type: integer
+      type: object
+    users:
+      properties:
+        banned:
+          type: integer
+        total:
+          type: integer
+      type: object
+  type: object
+AdminDoc:
+  description: 平台文档完整字段。
+  properties:
+    author_user_id:
+      description: 作者用户id
+      nullable: true
+      type: integer
+    category_id:
+      description: 分类id
+      nullable: true
+      type: integer
+    content_md:
+      description: 正文Markdown
+      type: string
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    id:
+      description: 主键
+      type: integer
+    owner_type:
+      description: '归属: platform/server'
+      type: string
+    server_id:
+      description: owner_type=server时的空间id
+      nullable: true
+      type: integer
+    slug:
+      description: 全局唯一URL标识
+      type: string
+    status:
+      description: '状态: draft/published'
+      type: string
+    title:
+      description: 标题
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+    version:
+      description: 版本号
+      type: integer
+    visibility:
+      description: '可见性: public/login/members/roles/servers/tags'
+      type: string
+    visible_roles:
+      items:
+        type: string
+      nullable: true
+      type: array
+    visible_servers:
+      items:
+        type: integer
+      nullable: true
+      type: array
+    visible_tags:
+      items:
+        type: integer
+      nullable: true
+      type: array
+  type: object
+AdminDocCategory:
+  description: 平台文档分类。
+  properties:
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    id:
+      description: 主键
+      type: integer
+    name:
+      description: 分类名
+      type: string
+    owner_type:
+      description: '归属: platform/server'
+      type: string
+    server_id:
+      description: owner_type=server时的空间id
+      nullable: true
+      type: integer
+    sort:
+      description: '排序,小的在前'
+      type: integer
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+  type: object
+AdminFeedbackAttachment:
+  description: 反馈附件元数据，不包含存储路径和下载地址。
+  properties:
+    byte_length:
+      type: integer
+    content_type:
+      type: string
+    created_time:
+      nullable: true
+      type: string
+    id:
+      type: integer
+    ordinal:
+      type: integer
+    original_name:
+      type: string
+    sha256:
+      type: string
+    status:
+      enum:
+        - expected
+        - uploaded
+      type: string
+    uuid:
+      format: uuid
+      type: string
+  type: object
+AdminFeedbackDetail:
+  description: 工单表单快照、管理员备注和附件元数据。
+  properties:
+    admin_note:
+      nullable: true
+      type: string
+    admin_status:
+      enum:
+        - pending
+        - processing
+        - resolved
+      type: string
+    area:
+      enum:
+        - development
+        - community
+      type: string
+    attachments:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AdminFeedbackAttachment'
+      type: array
+    created_time:
+      nullable: true
+      type: string
+    form:
+      $ref: '../openapi.yaml#/components/schemas/AdminFeedbackForm'
+    id:
+      type: integer
+    kind:
+      enum:
+        - bug
+        - feature
+        - asset
+        - request
+        - content
+        - campaign
+        - suggestion
+        - complaint
+      type: string
+    status:
+      enum:
+        - receiving
+        - completed
+      type: string
+    submission_key:
+      format: uuid
+      type: string
+    updated_time:
+      nullable: true
+      type: string
+    user:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    uuid:
+      format: uuid
+      type: string
+  type: object
+AdminFeedbackForm:
+  additionalProperties: true
+  description: '用户表单快照；后端只校验 kind/title，其余字段按原样保存。'
+  properties:
+    kind:
+      enum:
+        - bug
+        - feature
+        - asset
+        - request
+        - content
+        - campaign
+        - suggestion
+        - complaint
+      type: string
+    title:
+      maxLength: 200
+      minLength: 1
+      type: string
+  required:
+    - kind
+    - title
+  type: object
+AdminFeedbackListItem:
+  description: 反馈工单列表。
+  properties:
+    admin_status:
+      enum:
+        - pending
+        - processing
+        - resolved
+      type: string
+    area:
+      enum:
+        - development
+        - community
+      type: string
+    attachment_count:
+      type: integer
+    created_time:
+      nullable: true
+      type: string
+    id:
+      type: integer
+    kind:
+      enum:
+        - bug
+        - feature
+        - asset
+        - request
+        - content
+        - campaign
+        - suggestion
+        - complaint
+      type: string
+    status:
+      enum:
+        - receiving
+        - completed
+      type: string
+    submission_key:
+      format: uuid
+      type: string
+    title:
+      type: string
+    updated_time:
+      nullable: true
+      type: string
+    user:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    uuid:
+      format: uuid
+      type: string
+  type: object
+AdminId:
+  description: '新建记录的 ID。'
+  properties:
+    id:
+      type: integer
+  required:
+    - id
+  type: object
+AdminMemberUser:
+  description: 空间详情中的成员用户选定字段。
+  properties:
+    avatar:
+      type: string
+    email:
+      type: string
+    id:
+      type: integer
+    username:
+      type: string
+  type: object
+AdminMemberWithServer:
+  description: 用户详情中的成员关系和空间。
+  properties:
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    id:
+      description: 主键
+      type: integer
+    joined_time:
+      description: 加入时间
+      nullable: true
+      type: string
+    role_key:
+      description: '空间角色: owner/admin/member'
+      type: string
+    server:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminServerStateBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    server_id:
+      description: 空间id
+      type: integer
+    source:
+      description: '入空间方式: grant/manual/bind'
+      type: string
+    status:
+      description: '状态: active/banned/left'
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+    user_id:
+      description: 用户id
+      type: integer
+  type: object
+AdminMemberWithUser:
+  description: 空间详情成员及关联用户。
+  properties:
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    id:
+      description: 主键
+      type: integer
+    joined_time:
+      description: 加入时间
+      nullable: true
+      type: string
+    role_key:
+      description: '空间角色: owner/admin/member'
+      type: string
+    server_id:
+      description: 空间id
+      type: integer
+    source:
+      description: '入空间方式: grant/manual/bind'
+      type: string
+    status:
+      description: '状态: active/banned/left'
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+    user:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminMemberUser'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    user_id:
+      description: 用户id
+      type: integer
+  type: object
+AdminNotificationBatch:
+  description: 按批次聚合的通知记录。
+  properties:
+    batch_uuid:
+      format: uuid
+      type: string
+    category:
+      enum:
+        - announcement
+        - personal_update
+        - service_notice
+      type: string
+    created_time:
+      nullable: true
+      type: string
+    expires_time:
+      nullable: true
+      type: string
+    necessity:
+      enum:
+        - optional
+        - necessary
+      type: string
+    recipients:
+      type: integer
+    scope:
+      enum:
+        - community
+        - personal
+      type: string
+    status:
+      enum:
+        - expired
+        - active
+      type: string
+    title:
+      type: string
+    unread:
+      type: integer
+  type: object
+AdminNotificationCreated:
+  description: 发送后的通知批次和接收人数。
+  properties:
+    batch_uuid:
+      format: uuid
+      type: string
+    recipients:
+      type: integer
+  required:
+    - batch_uuid
+    - recipients
+  type: object
+AdminPluginBrief:
+  description: 绑定码关联插件字段；插件下拉选项仅包含在线插件。
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    slug:
+      type: string
+    status:
+      enum:
+        - draft
+        - online
+        - offline
+      type: string
+  type: object
+AdminPluginFeature:
+  description: 插件功能点字典。
+  properties:
+    default_enabled:
+      description: 空间未显式配置时是否默认开启
+      type: boolean
+    feature_key:
+      description: '功能键,如 nitro'
+      type: string
+    id:
+      description: 主键
+      type: integer
+    name:
+      description: 功能中文名
+      type: string
+    plugin_id:
+      description: 所属插件id
+      type: integer
+  type: object
+AdminPluginListItem:
+  description: 插件列表及功能点、绑定码数量。
+  properties:
+    bindings_count:
+      type: integer
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    description_md:
+      description: 详情(Markdown)
+      type: string
+    doc_category_id:
+      description: '平台文档默认分类id,预留'
+      nullable: true
+      type: integer
+    features_count:
+      type: integer
+    id:
+      description: 主键
+      type: integer
+    latest_version:
+      description: 最新版本号
+      type: string
+    name:
+      description: 插件名称
+      type: string
+    slug:
+      description: '插件唯一标识,如 ex-tuner'
+      type: string
+    status:
+      description: '状态: draft/online/offline'
+      type: string
+    summary:
+      description: 一句话简介
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+  type: object
+AdminServerBrief:
+  description: 空间下拉选项和应用归属空间。
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    slug:
+      type: string
+  type: object
+AdminServerDetail:
+  description: 空间基本信息、成员及绑定码。
+  properties:
+    bindings:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AdminBindingWithPlugin'
+      type: array
+    members:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AdminMemberWithUser'
+      type: array
+    server:
+      $ref: '../openapi.yaml#/components/schemas/AdminServerWithOwner'
+  required:
+    - server
+    - members
+    - bindings
+  type: object
+AdminServerListItem:
+  description: 空间列表，附成员和绑定码数量。
+  properties:
+    bindings_count:
+      type: integer
+    contact_qq:
+      description: 联系QQ
+      type: string
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    description:
+      description: 空间介绍
+      type: string
+    id:
+      description: 空间唯一标识
+      type: integer
+    logo:
+      description: 空间图标地址
+      type: string
+    members_count:
+      type: integer
+    name:
+      description: 空间名称
+      type: string
+    note:
+      description: '平台备注,仅超管可见'
+      type: string
+    owner:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    owner_user_id:
+      description: Owner用户id
+      type: integer
+    slug:
+      description: '空间短标识,全局唯一'
+      type: string
+    status:
+      description: '状态: active/suspended/closed'
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+  type: object
+AdminServerStateBrief:
+  description: 绑定码和用户成员关系关联的空间字段。
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    slug:
+      type: string
+    status:
+      enum:
+        - active
+        - suspended
+        - closed
+      type: string
+  type: object
+AdminServerWithOwner:
+  description: 空间完整字段及所有者选定字段。
+  properties:
+    contact_qq:
+      description: 联系QQ
+      type: string
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    description:
+      description: 空间介绍
+      type: string
+    id:
+      description: 空间唯一标识
+      type: integer
+    logo:
+      description: 空间图标地址
+      type: string
+    name:
+      description: 空间名称
+      type: string
+    note:
+      description: '平台备注,仅超管可见'
+      type: string
+    owner:
+      oneOf:
+        -
+          $ref: '../openapi.yaml#/components/schemas/AdminUserBrief'
+        -
+          enum:
+            - null
+          nullable: true
+          type: object
+    owner_user_id:
+      description: Owner用户id
+      type: integer
+    slug:
+      description: '空间短标识,全局唯一'
+      type: string
+    status:
+      description: '状态: active/suspended/closed'
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+  type: object
+AdminSsoRequest:
+  description: 'Redis 中仍存在的设备及 SSO 请求，不分页。'
+  properties:
+    client_id:
+      type: string
+    client_name:
+      type: string
+    created_ago:
+      description: 创建至今秒数，按600秒有效期推算。
+      minimum: 0
+      type: integer
+    device_code:
+      type: string
+    sso_request_id:
+      type: string
+    status:
+      type: string
+    ttl:
+      description: 剩余有效秒数。
+      minimum: 0
+      type: integer
+    user_code:
+      type: string
+    user_id:
+      nullable: true
+      type: integer
+    username:
+      type: string
+  type: object
+AdminTagIds:
+  description: '保存后有效且去重的用户标签 ID。'
+  properties:
+    tag_ids:
+      items:
+        type: integer
+      type: array
+  required:
+    - tag_ids
+  type: object
+AdminTagListItem:
+  description: 标签列表及关联用户数量。
+  properties:
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    id:
+      description: 主键
+      type: integer
+    name:
+      description: '标签名,全局唯一'
+      type: string
+    note:
+      description: 备注
+      type: string
+    user_count:
+      type: integer
+  type: object
+AdminUser:
+  description: '用户完整序列化字段，不返回 password_hash。'
+  properties:
+    avatar:
+      description: 头像地址
+      type: string
+    ban:
+      description: '封禁标记: 0正常 1封禁'
+      type: integer
+    created_time:
+      description: 创建时间
+      nullable: true
+      type: string
+    email:
+      description: '登录邮箱,全局唯一'
+      type: string
+    id:
+      description: 用户唯一标识
+      type: integer
+    last_login_time:
+      description: 最近登录时间
+      nullable: true
+      type: string
+    level:
+      description: '用户等级,预留'
+      type: integer
+    platform_role:
+      description: "平台角色: ''/ops/superadmin"
+      type: string
+    qq:
+      description: '联系QQ号,可空,唯一'
+      nullable: true
+      type: string
+    updated_time:
+      description: 更新时间
+      nullable: true
+      type: string
+    username:
+      description: 显示昵称
+      type: string
+  type: object
+AdminUserBrief:
+  description: 关联用户的选定字段。
+  properties:
+    email:
+      type: string
+    id:
+      type: integer
+    username:
+      type: string
+  type: object
+AdminUserDetail:
+  description: 用户详情，含最近50条会话和20条审计日志。
+  properties:
+    recent_logs:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AdminAuditLog'
+      type: array
+    servers:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AdminMemberWithServer'
+      type: array
+    sessions:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AdminAuthSession'
+      type: array
+    tags:
+      items:
+        properties:
+          id:
+            type: integer
+          name:
+            nullable: true
+            type: string
+        type: object
+      type: array
+    user:
+      $ref: '../openapi.yaml#/components/schemas/AdminUser'
+  required:
+    - user
+    - sessions
+    - servers
+    - tags
+    - recent_logs
+  type: object
+AdminVersion:
+  description: 文档当前版本号。
+  properties:
+    version:
+      type: integer
+  required:
+    - version
+  type: object

@@ -1,0 +1,597 @@
+AccountAdminLoginRequest:
+  properties:
+    captcha:
+      $ref: '../openapi.yaml#/components/schemas/AccountCaptchaAnswer'
+    email:
+      format: email
+      type: string
+    password:
+      format: password
+      type: string
+  required:
+    - email
+    - password
+    - captcha
+  type: object
+AccountAvatarRequest:
+  properties:
+    imageBase64:
+      description: '无 data: 前缀的原始图片 base64 字节；解码后最多 2MiB'
+      format: byte
+      type: string
+    mediaType:
+      enum:
+        - image/png
+        - image/jpeg
+        - image/webp
+      type: string
+  required:
+    - imageBase64
+    - mediaType
+  type: object
+AccountCaptchaAnswer:
+  properties:
+    answer:
+      type: string
+    challengeId:
+      description: '实际 PHP 请求与响应结构。'
+      type: string
+  required:
+    - challengeId
+    - answer
+  type: object
+AccountCaptchaData:
+  properties:
+    challengeId:
+      type: string
+    expiresAt:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    imageBase64:
+      description: 'PNG 图片字节 base64，无 data: 前缀'
+      format: byte
+      type: string
+  required:
+    - challengeId
+    - imageBase64
+    - expiresAt
+  type: object
+AccountCaptchaResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountCaptchaData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountEmailCodeResponse:
+  properties:
+    data:
+      oneOf:
+        -
+          items:
+            type: string
+          maxItems: 0
+          type: array
+        -
+          properties:
+            debug_code:
+              type: string
+          required:
+            - debug_code
+          type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountEmailRequest:
+  properties:
+    email:
+      format: email
+      type: string
+  required:
+    - email
+  type: object
+AccountEmptyResponse:
+  properties:
+    data:
+      items:
+        type: string
+      maxItems: 0
+      type: array
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountGrant:
+  properties:
+    app_name:
+      type: string
+    app_status:
+      nullable: true
+      type: string
+    app_type:
+      nullable: true
+      type: string
+    client_id:
+      type: string
+    granted_time:
+      nullable: true
+      type: string
+    revoked_time:
+      nullable: true
+      type: string
+    scopes:
+      items:
+        type: string
+      type: array
+    status:
+      type: string
+  required:
+    - client_id
+    - app_name
+    - app_type
+    - app_status
+    - scopes
+    - status
+    - granted_time
+    - revoked_time
+  type: object
+AccountGrantsData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AccountGrant'
+      type: array
+  required:
+    - list
+  type: object
+AccountGrantsResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountGrantsData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountInvitationCheckData:
+  properties:
+    email:
+      format: email
+      type: string
+    resendAvailableAt:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    serverTime:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    status:
+      enum:
+        - eligible
+      type: string
+  required:
+    - status
+    - email
+    - serverTime
+    - resendAvailableAt
+  type: object
+AccountInvitationCheckResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountInvitationCheckData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountInvitationCodeData:
+  properties:
+    debug_code:
+      description: '邮件发送失败且 debug 开启时存在'
+      type: string
+    resendAvailableAt:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    serverTime:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    status:
+      enum:
+        - accepted
+      type: string
+  required:
+    - status
+    - serverTime
+    - resendAvailableAt
+  type: object
+AccountInvitationCodeResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountInvitationCodeData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountInvitationCompleteData:
+  properties:
+    email:
+      type: string
+    status:
+      enum:
+        - registered
+      type: string
+  required:
+    - status
+    - email
+  type: object
+AccountInvitationCompleteRequest:
+  properties:
+    completionToken:
+      description: 十分钟一次性完成令牌
+      type: string
+    nickname:
+      maxLength: 32
+      minLength: 1
+      type: string
+    password:
+      format: password
+      maxLength: 64
+      minLength: 8
+      type: string
+  required:
+    - completionToken
+    - nickname
+    - password
+  type: object
+AccountInvitationCompleteResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountInvitationCompleteData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountInvitationVerifyData:
+  properties:
+    completionExpiresAt:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    completionToken:
+      type: string
+    email:
+      type: string
+    nickname:
+      type: string
+    serverTime:
+      description: 'Unix 时间戳（秒）'
+      format: int64
+      type: integer
+    status:
+      enum:
+        - verified
+      type: string
+  required:
+    - status
+    - completionToken
+    - email
+    - nickname
+    - serverTime
+    - completionExpiresAt
+  type: object
+AccountInvitationVerifyRequest:
+  properties:
+    captcha:
+      $ref: '../openapi.yaml#/components/schemas/AccountCaptchaAnswer'
+    code:
+      type: string
+    email:
+      format: email
+      type: string
+  required:
+    - email
+    - code
+  type: object
+AccountInvitationVerifyResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountInvitationVerifyData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountLoginData:
+  properties:
+    expires_in:
+      description: 有效期秒数
+      type: integer
+    token:
+      type: string
+    user:
+      $ref: '../openapi.yaml#/components/schemas/AccountLoginUser'
+  required:
+    - token
+    - expires_in
+    - user
+  type: object
+AccountLoginRequest:
+  properties:
+    captcha:
+      $ref: '../openapi.yaml#/components/schemas/AccountCaptchaAnswer'
+    email:
+      format: email
+      type: string
+    password:
+      format: password
+      type: string
+  required:
+    - email
+    - password
+  type: object
+AccountLoginResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountLoginData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountLoginUser:
+  properties:
+    avatar:
+      nullable: true
+      type: string
+    email:
+      format: email
+      type: string
+    id:
+      type: integer
+    platform_role:
+      description: '注册后当前模型未刷新数据库默认值，此分支可为 null；登录从数据库读取后为字符串'
+      nullable: true
+      type: string
+    username:
+      type: string
+  required:
+    - id
+    - email
+    - username
+    - avatar
+    - platform_role
+  type: object
+AccountMeData:
+  properties:
+    avatar:
+      nullable: true
+      type: string
+    email:
+      format: email
+      type: string
+    id:
+      type: integer
+    last_login_time:
+      description: '数据库时间 Y-m-d H:i:s'
+      nullable: true
+      type: string
+    platform_role:
+      type: string
+    qq:
+      nullable: true
+      type: string
+    username:
+      type: string
+  required:
+    - id
+    - email
+    - username
+    - avatar
+    - platform_role
+    - qq
+    - last_login_time
+  type: object
+AccountMeResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountMeData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountPasswordRequest:
+  properties:
+    new_password:
+      format: password
+      minLength: 6
+      type: string
+    old_password:
+      format: password
+      type: string
+  required:
+    - old_password
+    - new_password
+  type: object
+AccountProfileRequest:
+  minProperties: 1
+  properties:
+    avatar:
+      description: '仅 null 清除头像；其他值忽略'
+      nullable: true
+      type: string
+    fivemId:
+      description: '仅允许 null；其他值返回 400'
+      nullable: true
+      type: string
+    nickname:
+      maxLength: 32
+      minLength: 1
+      type: string
+    qq:
+      maxLength: 20
+      nullable: true
+      type: string
+  type: object
+AccountRegisterRequest:
+  properties:
+    code:
+      type: string
+    email:
+      format: email
+      type: string
+    password:
+      format: password
+      minLength: 6
+      type: string
+    qq:
+      type: string
+    username:
+      type: string
+  required:
+    - email
+    - password
+  type: object
+AccountRevokeAllData:
+  properties:
+    revoked:
+      type: integer
+  required:
+    - revoked
+  type: object
+AccountRevokeAllResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountRevokeAllData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountRevokedSessionsData:
+  properties:
+    revoked_sessions:
+      type: integer
+  required:
+    - revoked_sessions
+  type: object
+AccountRevokedSessionsResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountRevokedSessionsData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountSession:
+  properties:
+    client_id:
+      nullable: true
+      type: string
+    created_time:
+      description: '数据库时间 Y-m-d H:i:s'
+      nullable: true
+      type: string
+    current:
+      type: boolean
+    device_name:
+      type: string
+    expires_time:
+      description: '数据库时间 Y-m-d H:i:s'
+      nullable: true
+      type: string
+    id:
+      type: integer
+    ip:
+      type: string
+    last_used_time:
+      description: '数据库时间 Y-m-d H:i:s'
+      nullable: true
+      type: string
+    login_type:
+      enum:
+        - password
+        - oauth
+      type: string
+    platform:
+      type: string
+    scope:
+      type: string
+    status:
+      enum:
+        - active
+        - revoked
+        - expired
+      type: string
+    ua_hash:
+      type: string
+    updated_time:
+      description: '数据库时间 Y-m-d H:i:s'
+      nullable: true
+      type: string
+    user_id:
+      type: integer
+  required:
+    - id
+    - user_id
+    - login_type
+    - client_id
+    - device_name
+    - platform
+    - ip
+    - ua_hash
+    - scope
+    - status
+    - created_time
+    - last_used_time
+    - expires_time
+    - updated_time
+    - current
+  type: object
+AccountSessionsData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/AccountSession'
+      type: array
+  required:
+    - list
+  type: object
+AccountSessionsResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/AccountSessionsData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+AccountUnhandledErrorBody:
+  description: '现有异常处理器返回 JSON 编码的 {message} 文本，响应沿用 text/html 类型'
+  example: '{"message":"请求过于频繁"}'
+  type: string

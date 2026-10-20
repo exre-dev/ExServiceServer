@@ -1,0 +1,225 @@
+/api/oauth/device/init:
+  post:
+    description: '仅 active plugin 应用可用。client_id/client_secret 在请求 body 中传递；返回设备码、六位用户码及供用户网站使用的 sso_request_id，有效 600 秒。'
+    operationId: createOAuthDeviceAuthorization
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthDeviceInitRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthDeviceInitRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/OAuthDeviceInitResponse'
+        description: 操作成功。
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 发起插件设备码授权
+    tags:
+      - 'OAuth 授权'
+    x-audience: public
+/api/oauth/device/token:
+  post:
+    description: '仅 active plugin 应用可用，客户端凭证在请求 body 中传递。等待用户确认时 HTTP 200 返回裸 {error: authorization_pending}；授权后一次性消费设备码并返回 {msg,data} 令牌信封。过期、重复消费、应用不匹配为 400；建议按初始化返回的 5 秒间隔轮询，当前实现未强制间隔。'
+    operationId: pollOAuthDeviceToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthDeviceTokenRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthDeviceTokenRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              oneOf:
+                -
+                  $ref: '../openapi.yaml#/components/schemas/OAuthTokenResponse'
+                -
+                  $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationPending'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 轮询设备授权并换取访问令牌
+    tags:
+      - 'OAuth 授权'
+    x-audience: public
+/api/oauth/token:
+  post:
+    description: '客户端凭证在请求 body 中传递，不支持 HTTP Basic。grant_type 省略时为 authorization_code；授权码有效 300 秒、一次性消费；redirect_uri 与 PKCE 不匹配时仍已消费授权码。不签发 refresh_token。'
+    operationId: exchangeOAuthAuthorizationCode
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationCodeRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationCodeRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/OAuthTokenResponse'
+        description: 操作成功。
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: 使用授权码换取访问令牌
+    tags:
+      - 'OAuth 授权'
+    x-audience: public
+/oauth/authorize:
+  get:
+    description: '免登录返回 HTML；页面自行要求登录并调用内部 authorize-info 与 authorize/confirm。查询参数由 HTML 脚本读取，服务端页面动作本身不校验参数。'
+    operationId: showOAuthAuthorizationPage
+    parameters:
+      -
+        description: 'HTML 确认页读取的应用标识。'
+        in: query
+        name: client_id
+        required: false
+        schema:
+          type: string
+      -
+        description: 'HTML 确认页读取的回调地址。'
+        in: query
+        name: redirect_uri
+        required: false
+        schema:
+          type: string
+      -
+        description: 'HTML 确认页原样传给授权确认接口的状态。'
+        in: query
+        name: state
+        required: false
+        schema:
+          type: string
+      -
+        description: '空格分隔的申请 scope。'
+        in: query
+        name: scope
+        required: false
+        schema:
+          type: string
+      -
+        description: '可选 PKCE challenge。'
+        in: query
+        name: code_challenge
+        required: false
+        schema:
+          type: string
+      -
+        description: 'S256 或 plain。'
+        in: query
+        name: code_challenge_method
+        required: false
+        schema:
+          default: plain
+          type: string
+    responses:
+      '200':
+        content:
+          text/html:
+            schema:
+              type: string
+        description: '浏览器 HTML 页面。'
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security: []
+    summary: '显示 OAuth 授权确认页面'
+    tags:
+      - 'OAuth 页面'
+    x-audience: public
+/oauth/device:
+  get:
+    description: '当前实现 page 不在 noNeedLogin 列表中，因此全局 CheckLogin 先要求有效 Bearer 会话；缺失或无效返回 JSON 401，用户封禁返回 403，成功才返回 HTML。页面随后使用六位用户码调用内部 device/verify。'
+    operationId: showOAuthDevicePage
+    responses:
+      '200':
+        content:
+          text/html:
+            schema:
+              type: string
+        description: '浏览器 HTML 页面。'
+      '401':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+      '403':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+        description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 显示设备码验证页面
+    tags:
+      - 'OAuth 页面'
+    x-audience: public

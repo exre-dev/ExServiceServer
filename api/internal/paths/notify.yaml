@@ -1,0 +1,321 @@
+/api/notification-preferences:
+  get:
+    operationId: notificationPreferences
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationPreferencesResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 获取通知偏好
+    tags:
+      - 通知
+    x-audience: internal
+  put:
+    description: 'announcement 与 personal_update 均须传布尔值；service_notice 不可关闭。serverTime 使用秒。'
+    operationId: notificationUpdatePreferences
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/NotificationPreferencesRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationPreferencesResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '409':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 整体替换可选类别偏好
+    tags:
+      - 通知
+    x-audience: internal
+/api/notifications:
+  get:
+    description: '通知列表（keyset 分页, view=unread|history）'
+    operationId: notificationList
+    parameters:
+      -
+        in: query
+        name: view
+        required: true
+        schema:
+          enum:
+            - unread
+            - history
+          type: string
+      -
+        in: query
+        name: scope
+        required: false
+        schema:
+          default: all
+          enum:
+            - all
+            - community
+            - personal
+          type: string
+      -
+        in: query
+        name: category
+        required: false
+        schema:
+          enum:
+            - announcement
+            - personal_update
+            - service_notice
+          type: string
+      -
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 20
+          description: '取值 1 至 50；越界时回退到 20'
+          type: integer
+      -
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationListResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 通知列表与签名游标分页
+    tags:
+      - 通知
+    x-audience: internal
+/api/notifications/clear-all:
+  post:
+    description: '令牌绑定用户与用途；requestId 的幂等结果保留十分钟。'
+    operationId: notificationClearAll
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/NotificationClearAllRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/NotificationClearAllRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationClearAllResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 按快照清理通知
+    tags:
+      - 通知
+    x-audience: internal
+/api/notifications/clear-preview:
+  post:
+    description: 快照绑定用户、批次、上界及数量，十分钟有效。
+    operationId: notificationClearPreview
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationClearPreviewResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 生成十分钟清理快照
+    tags:
+      - 通知
+    x-audience: internal
+/api/notifications/read-all:
+  post:
+    description: '令牌绑定用户与用途；requestId 的幂等结果保留十分钟。'
+    operationId: notificationReadAll
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/NotificationReadAllRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/NotificationReadAllRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationReadAllResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 按令牌上界全部已读
+    tags:
+      - 通知
+    x-audience: internal
+/api/notifications/summary:
+  get:
+    description: 未读摘要（铃铛轮询）
+    operationId: notificationSummary
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationSummaryResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 未读摘要
+    tags:
+      - 通知
+    x-audience: internal
+'/api/notifications/{notificationId}':
+  get:
+    description: 通知详情（读详情不改变已读状态）
+    operationId: notificationDetail
+    parameters:
+      -
+        in: path
+        name: notificationId
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationDetailResponse'
+        description: 成功
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 通知详情（不自动已读）
+    tags:
+      - 通知
+    x-audience: internal
+'/api/notifications/{notificationId}/state':
+  patch:
+    description: '单条已读/未读（乐观锁 409）'
+    operationId: notificationSetState
+    parameters:
+      -
+        in: path
+        name: notificationId
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/NotificationStateRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/NotificationStateResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '409':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/SetupRequired'
+    security:
+      -
+        sessionAuth: []
+    summary: 更新已读状态与修订号
+    tags:
+      - 通知
+    x-audience: internal

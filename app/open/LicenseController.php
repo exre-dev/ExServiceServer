@@ -2,6 +2,8 @@
 
 namespace app\open;
 
+use OpenApi\Attributes as OA;
+
 use app\common\model\ServerAccountModel;
 use app\common\services\PermService;
 use support\Redis;
@@ -20,12 +22,62 @@ class LicenseController
 {
   protected $noNeedLogin = '*';
 
+  #[OA\Post(
+    path: '/api/open/license/validate',
+    operationId: 'validatePluginLicense',
+    summary: '校验插件许可与心跳',
+    description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。首次 active 校验锁定服务器哈希并记录心跳；状态 revoked、disabled、expired、plugin_offline、server_suspended、server_mismatch 均为 HTTP 200 data.status。未知绑定码只有 403，不会返回 unknown_code 状态。',
+    tags: ['开放插件'],
+    security: [['bindCodeAuth' => []]],
+    requestBody: new OA\RequestBody(
+      required: true,
+      content: [
+        new OA\MediaType(
+          mediaType: 'application/json',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/PluginLicenseRequest',
+          ),
+        ),
+        new OA\MediaType(
+          mediaType: 'application/x-www-form-urlencoded',
+          schema: new OA\Schema(
+            ref: '#/components/schemas/PluginLicenseRequest',
+          ),
+        ),
+      ],
+    ),
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '操作成功。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/PluginLicenseResponse',
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
+        content: new OA\JsonContent(
+          ref: '#/components/schemas/BusinessErrorBody',
+        ),
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+    x: ['audience' => 'public'],
+  )]
   public function validate(Request $request): Response
   {
     $binding = $request->binding;
     $hash = trim((string) $request->post('server_key_hash', ''));
     if ($hash === '') {
-      return fail("缺少 server_key_hash", 400);
+      return fail('缺少 server_key_hash', 400);
     }
 
     $status = 'active';
@@ -35,11 +87,16 @@ class LicenseController
       $status = 'revoked';
     } elseif ($binding->status === 'disabled') {
       $status = 'disabled';
-    } elseif ($binding->expires_time && strtotime((string) $binding->expires_time) < time()) {
+    } elseif (
+      $binding->expires_time &&
+      strtotime((string) $binding->expires_time) < time()
+    ) {
       $status = 'expired';
     } elseif (!$binding->plugin || $binding->plugin->status !== 'online') {
       $status = 'plugin_offline';
-    } elseif (ServerAccountModel::find($binding->server_id)?->status !== 'active') {
+    } elseif (
+      ServerAccountModel::find($binding->server_id)?->status !== 'active'
+    ) {
       $status = 'server_suspended';
     }
 
@@ -62,14 +119,24 @@ class LicenseController
 
       // 心跳缓存（吊销/重置/改权限时由管理端主动删除）
       $slug = $request->open_plugin_slug;
-      Redis::setex("lic:{$binding->server_id}:{$slug}", 300, json_encode([
-        'status' => 'active',
-        'features' => $features,
-        'expires_time' => $binding->expires_time,
-      ]));
+      Redis::setex(
+        "lic:{$binding->server_id}:{$slug}",
+        300,
+        json_encode([
+          'status' => 'active',
+          'features' => $features,
+          'expires_time' => $binding->expires_time,
+        ]),
+      );
     }
 
-    $syncToken = md5(json_encode($features) . '|' . $binding->code . '|' . $binding->updated_time);
+    $syncToken = md5(
+      json_encode($features) .
+        '|' .
+        $binding->code .
+        '|' .
+        $binding->updated_time,
+    );
 
     return success([
       'status' => $status,

@@ -1,0 +1,141 @@
+OAuthAuthorizationCodeRequest:
+  properties:
+    client_id:
+      minLength: 1
+      type: string
+    client_secret:
+      minLength: 1
+      type: string
+      writeOnly: true
+    code:
+      minLength: 1
+      type: string
+    code_verifier:
+      description: '授权请求设置非空 code_challenge 时必填；支持 S256 与 plain。'
+      type: string
+    grant_type:
+      default: authorization_code
+      description: 'OAuth 授权码与设备码流程的数据结构。'
+      enum:
+        - authorization_code
+      type: string
+    redirect_uri:
+      description: 必须与授权请求精确一致。
+      type: string
+  required:
+    - code
+    - client_id
+    - client_secret
+    - redirect_uri
+  type: object
+OAuthAuthorizationPending:
+  properties:
+    error:
+      enum:
+        - authorization_pending
+      type: string
+  required:
+    - error
+  type: object
+OAuthDeviceInitRequest:
+  properties:
+    client_id:
+      minLength: 1
+      type: string
+    client_secret:
+      minLength: 1
+      type: string
+      writeOnly: true
+  required:
+    - client_id
+    - client_secret
+  type: object
+OAuthDeviceInitResponse:
+  properties:
+    data:
+      properties:
+        device_code:
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          type: string
+        expires_in:
+          enum:
+            - 600
+          type: integer
+        interval:
+          enum:
+            - 5
+          type: integer
+        sso_request_id:
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          type: string
+        user_code:
+          pattern: '^[0-9]{6}$'
+          type: string
+        verification_uri_web:
+          description: '配置 userweb.base_url 后为其 /login?ssoRequestId=... 地址，否则 null。'
+          nullable: true
+          type: string
+        verification_url:
+          enum:
+            - /oauth/device
+          type: string
+      required:
+        - device_code
+        - user_code
+        - sso_request_id
+        - verification_url
+        - verification_uri_web
+        - expires_in
+        - interval
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+OAuthDeviceTokenRequest:
+  properties:
+    client_id:
+      minLength: 1
+      type: string
+    client_secret:
+      minLength: 1
+      type: string
+      writeOnly: true
+    device_code:
+      minLength: 1
+      type: string
+  required:
+    - client_id
+    - client_secret
+    - device_code
+  type: object
+OAuthTokenResponse:
+  properties:
+    data:
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          description: 会话令牌有效秒数。
+          type: integer
+        scope:
+          description: '空格分隔的授权 scope；当前实现不签发 refresh_token。'
+          type: string
+        token_type:
+          enum:
+            - Bearer
+          type: string
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - scope
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object

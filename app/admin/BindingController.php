@@ -2,6 +2,8 @@
 
 namespace app\admin;
 
+use OpenApi\Attributes as OA;
+
 use app\common\exception\ApiException;
 use app\common\model\PluginBindingModel;
 use app\common\services\AuditService;
@@ -21,6 +23,114 @@ class BindingController
   /**
    * 绑定码列表
    */
+  #[OA\Get(
+    path: '/api/admin/bindings',
+    operationId: 'adminBindingIndex',
+    summary: '全局绑定码列表',
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。',
+    tags: ['平台管理端'],
+    security: [['sessionAuth' => []]],
+    x: ['audience' => 'internal'],
+    parameters: [
+      new OA\Parameter(
+        name: 'page',
+        in: 'query',
+        required: false,
+        description: '页码，小于1按1处理',
+        schema: new OA\Schema(type: 'integer', minimum: 1, default: 1),
+      ),
+      new OA\Parameter(
+        name: 'page_size',
+        in: 'query',
+        required: false,
+        description: '每页数量，服务端裁剪到允许范围',
+        schema: new OA\Schema(
+          type: 'integer',
+          minimum: 1,
+          maximum: 50,
+          default: 10,
+        ),
+      ),
+      new OA\Parameter(
+        name: 'status',
+        in: 'query',
+        required: false,
+        description: '非空时按状态筛选',
+        schema: new OA\Schema(
+          type: 'string',
+          enum: ['active', 'revoked', 'disabled'],
+        ),
+      ),
+      new OA\Parameter(
+        name: 'server_id',
+        in: 'query',
+        required: false,
+        description: '大于0时筛选空间',
+        schema: new OA\Schema(type: 'integer'),
+      ),
+      new OA\Parameter(
+        name: 'plugin_id',
+        in: 'query',
+        required: false,
+        description: '大于0时筛选插件',
+        schema: new OA\Schema(type: 'integer'),
+      ),
+      new OA\Parameter(
+        name: 'keyword',
+        in: 'query',
+        required: false,
+        description: '关键词，去除首尾空白后模糊搜索',
+        schema: new OA\Schema(type: 'string'),
+      ),
+    ],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '操作成功',
+        content: new OA\JsonContent(
+          type: 'object',
+          properties: [
+            new OA\Property(
+              property: 'msg',
+              type: 'string',
+              description: '成功消息',
+            ),
+            new OA\Property(
+              property: 'data',
+              type: 'object',
+              properties: [
+                new OA\Property(
+                  property: 'list',
+                  type: 'array',
+                  items: new OA\Items(
+                    ref: '#/components/schemas/AdminBindingListItem',
+                  ),
+                ),
+                new OA\Property(property: 'total', type: 'integer'),
+              ],
+            ),
+          ],
+          required: ['msg', 'data'],
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+  )]
   public function index(Request $request): Response
   {
     $page = max(1, (int) $request->get('page', 1));
@@ -30,7 +140,10 @@ class BindingController
     $pluginId = (int) $request->get('plugin_id', 0);
     $keyword = trim((string) $request->get('keyword', ''));
 
-    $q = PluginBindingModel::with(['server:id,name,slug,status', 'plugin:id,slug,name,status']);
+    $q = PluginBindingModel::with([
+      'server:id,name,slug,status',
+      'plugin:id,slug,name,status',
+    ]);
     if ($status !== '') {
       $q->where('status', $status);
     }
@@ -53,7 +166,10 @@ class BindingController
         $item['health'] = 'inactive';
       } elseif (empty($row->last_heartbeat)) {
         $item['health'] = 'never';
-      } elseif (strtotime((string) $row->last_heartbeat) < time() - self::STALE_SECONDS) {
+      } elseif (
+        strtotime((string) $row->last_heartbeat) <
+        time() - self::STALE_SECONDS
+      ) {
         $item['health'] = 'stale';
       } else {
         $item['health'] = 'ok';
@@ -70,21 +186,82 @@ class BindingController
   /**
    * 吊销绑定码（立即失效: 清缓存, 插件下次心跳拿到 revoked）
    */
+  #[OA\Post(
+    path: '/api/admin/bindings/{id}/revoke',
+    operationId: 'adminBindingRevoke',
+    summary: '吊销绑定码',
+    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。已吊销或不存在返回400；吊销后清缓存，插件下次心跳立即感知。',
+    tags: ['平台管理端'],
+    security: [['sessionAuth' => []]],
+    x: ['audience' => 'internal'],
+    parameters: [
+      new OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        description: '记录 ID',
+        schema: new OA\Schema(type: 'integer'),
+      ),
+    ],
+    responses: [
+      new OA\Response(
+        response: 200,
+        description: '操作成功',
+        content: new OA\JsonContent(
+          type: 'object',
+          properties: [
+            new OA\Property(
+              property: 'msg',
+              type: 'string',
+              description: '成功消息',
+            ),
+            new OA\Property(
+              property: 'data',
+              type: 'array',
+              items: new OA\Items(type: 'string'),
+              maxItems: 0,
+              description: '当前成功响应为空数组 []',
+            ),
+          ],
+          required: ['msg', 'data'],
+        ),
+      ),
+      new OA\Response(
+        response: 400,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 401,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 403,
+        ref: '#/components/responses/BusinessError',
+      ),
+      new OA\Response(
+        response: 503,
+        ref: '#/components/responses/SetupRequired',
+      ),
+    ],
+  )]
   public function revoke(Request $request, int $id): Response
   {
     $binding = PluginBindingModel::with('plugin:id,slug')->find($id);
     if (!$binding) {
-      throw new ApiException("绑定码不存在");
+      throw new ApiException('绑定码不存在');
     }
     if ($binding->status === 'revoked') {
-      throw new ApiException("绑定码已被吊销");
+      throw new ApiException('绑定码已被吊销');
     }
 
     $binding->status = 'revoked';
     $binding->save();
 
     if ($binding->plugin) {
-      PermService::clearCache((int) $binding->server_id, (string) $binding->plugin->slug);
+      PermService::clearCache(
+        (int) $binding->server_id,
+        (string) $binding->plugin->slug,
+      );
     }
 
     AuditService::log((int) $request->uid, 'platform', 'binding.revoke', [
@@ -93,6 +270,6 @@ class BindingController
       'target_id' => $id,
       'detail' => ['code' => $binding->code],
     ]);
-    return success([], "绑定码已吊销");
+    return success([], '绑定码已吊销');
   }
 }

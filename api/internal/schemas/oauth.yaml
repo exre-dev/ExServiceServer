@@ -1,0 +1,100 @@
+OAuthAuthorizationConfirmRequest:
+  properties:
+    client_id:
+      minLength: 1
+      type: string
+    code_challenge:
+      type: string
+    code_challenge_method:
+      default: plain
+      description: 'S256 不区分大小写，其余值按 plain 处理。'
+      type: string
+    redirect_uri:
+      minLength: 1
+      type: string
+    scope:
+      description: '空格分隔；与应用允许 scope 取交集，并补充 user.basic。'
+      type: string
+    state:
+      minLength: 1
+      type: string
+  required:
+    - client_id
+    - redirect_uri
+    - state
+  type: object
+OAuthAuthorizationConfirmResponse:
+  properties:
+    data:
+      properties:
+        redirect:
+          description: '回调白名单地址附加 code 与原始 state；接口本身不执行 HTTP 重定向。'
+          type: string
+      required:
+        - redirect
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+OAuthAuthorizationInfoResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/OAuthAuthorizationInfoResponseData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+OAuthAuthorizationInfoResponseData:
+  properties:
+    client_id:
+      type: string
+    name:
+      type: string
+    scope_labels:
+      items:
+        type: string
+      type: array
+    scopes:
+      items:
+        type: string
+      type: array
+    type:
+      enum:
+        - third_party
+      type: string
+  required:
+    - client_id
+    - name
+    - type
+    - scopes
+    - scope_labels
+  type: object
+OAuthDeviceVerifyRequest:
+  properties:
+    user_code:
+      description: '初始化返回的六位用户码；当前实现只做非空与 Redis 查找。'
+      minLength: 1
+      type: string
+  required:
+    - user_code
+  type: object
+OAuthDeviceVerifyResponse:
+  properties:
+    data:
+      properties:
+        app_name:
+          type: string
+      required:
+        - app_name
+      type: object
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object

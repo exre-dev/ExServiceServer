@@ -1,0 +1,136 @@
+/api/storage/files:
+  get:
+    description: '公开读取（octet-stream + attachment, 禁嗅探）'
+    operationId: storageReadFile
+    parameters:
+      -
+        in: query
+        name: key
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        content:
+          application/octet-stream:
+            schema:
+              format: binary
+              type: string
+        description: '文件字节；统一以 octet-stream 下载'
+        headers:
+          Cache-Control:
+            schema:
+              enum:
+                - no-store
+              type: string
+          Content-Disposition:
+            description: 'attachment; filename=文件名'
+            schema:
+              type: string
+          X-Content-Type-Options:
+            schema:
+              enum:
+                - nosniff
+              type: string
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '404':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+    security: []
+    summary: 公开下载本地文件
+    tags:
+      - 存储
+    x-audience: internal
+/api/storage/uploads:
+  post:
+    description: '服务端中转上传（multipart: data 文件 + key/medium/contentType 文本字段）'
+    operationId: storageUpload
+    requestBody:
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/StorageUploadRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/StorageUploadResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '413':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+    security:
+      -
+        sessionAuth: []
+    summary: 上传本地文件
+    tags:
+      - 存储
+    x-audience: internal
+/api/storage/uploads/complete:
+  post:
+    description: '当前部署始终返回 503 与 {msg} 错误体；不解析请求字段。'
+    operationId: storageComplete
+    responses:
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+    security:
+      -
+        sessionAuth: []
+    summary: 'COS 上传确认（未启用）'
+    tags:
+      - 存储
+    x-audience: internal
+/api/storage/uploads/prepare:
+  post:
+    description: 'file 介质返回二十 MiB 上限；cos 未启用，返回 503。'
+    operationId: storagePrepare
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/StoragePrepareRequest'
+        application/x-www-form-urlencoded:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/StoragePrepareRequest'
+      required: true
+    responses:
+      '200':
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/StoragePrepareResponse'
+        description: 成功
+      '400':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '401':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '403':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '413':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+      '503':
+        $ref: '../openapi.yaml#/components/responses/BusinessError'
+    security:
+      -
+        sessionAuth: []
+    summary: 本地文件上传计划
+    tags:
+      - 存储
+    x-audience: internal

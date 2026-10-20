@@ -1,0 +1,254 @@
+ContentBrowseData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ContentDocumentSummary'
+      type: array
+  type: object
+ContentCategoriesData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ContentCategory'
+      type: array
+  type: object
+ContentCategory:
+  properties:
+    created_time:
+      nullable: true
+      type: string
+    id:
+      type: integer
+    name:
+      type: string
+    owner_type:
+      enum:
+        - platform
+        - server
+      type: string
+    server_id:
+      nullable: true
+      type: integer
+    sort:
+      type: integer
+    updated_time:
+      nullable: true
+      type: string
+  type: object
+ContentCategoryInput:
+  properties:
+    name:
+      description: 'trim 后非空'
+      type: string
+    sort:
+      default: 0
+      type: integer
+  required:
+    - name
+  type: object
+ContentDocStatusInput:
+  properties:
+    status:
+      enum:
+        - draft
+        - published
+      type: string
+  required:
+    - status
+  type: object
+ContentDocument:
+  properties:
+    author_user_id:
+      nullable: true
+      type: integer
+    category_id:
+      nullable: true
+      type: integer
+    content_md:
+      type: string
+    created_time:
+      nullable: true
+      type: string
+    id:
+      type: integer
+    owner_type:
+      enum:
+        - platform
+        - server
+      type: string
+    server_id:
+      nullable: true
+      type: integer
+    slug:
+      type: string
+    status:
+      enum:
+        - draft
+        - published
+      type: string
+    title:
+      type: string
+    updated_time:
+      nullable: true
+      type: string
+    version:
+      type: integer
+    visibility:
+      enum:
+        - public
+        - login
+        - members
+        - roles
+        - servers
+        - tags
+      type: string
+    visible_roles:
+      items:
+        enum:
+          - owner
+          - admin
+          - member
+        type: string
+      nullable: true
+      type: array
+    visible_servers:
+      items:
+        type: integer
+      nullable: true
+      type: array
+    visible_tags:
+      items:
+        type: integer
+      nullable: true
+      type: array
+  type: object
+ContentDocumentSummary:
+  properties:
+    category_id:
+      nullable: true
+      type: integer
+    id:
+      description: 文档管理和浏览的数据结构。
+      type: integer
+    owner_type:
+      enum:
+        - platform
+        - server
+      type: string
+    server_id:
+      nullable: true
+      type: integer
+    slug:
+      type: string
+    title:
+      type: string
+    updated_time:
+      nullable: true
+      type: string
+    version:
+      type: integer
+    visibility:
+      enum:
+        - public
+        - login
+        - members
+        - roles
+        - servers
+        - tags
+      type: string
+    visible_roles:
+      items:
+        enum:
+          - owner
+          - admin
+          - member
+        type: string
+      nullable: true
+      type: array
+    visible_servers:
+      items:
+        type: integer
+      nullable: true
+      type: array
+    visible_tags:
+      items:
+        type: integer
+      nullable: true
+      type: array
+  type: object
+ContentManagedDocsData:
+  properties:
+    list:
+      items:
+        $ref: '../openapi.yaml#/components/schemas/ContentDocument'
+      type: array
+    total:
+      type: integer
+  type: object
+ContentServerDocCreateInput:
+  description: 'visibility 默认 members，content_md 默认空；归属与作者由服务端设置。roles 至少一个有效角色，否则 400；非 roles 的 visible_roles 存 null。'
+  properties:
+    category_id:
+      description: '0 转为 null；当前控制器不校验分类归属'
+      type: integer
+    content_md:
+      type: string
+    slug:
+      description: '转小写并 trim；仅接受 ^[a-z0-9][a-z0-9-]{0,60}$，无效或冲突自动生成唯一 doc- 标识'
+      type: string
+    status:
+      default: draft
+      description: '无效状态回退 draft'
+      enum:
+        - draft
+        - published
+      type: string
+    title:
+      description: '创建时 trim 后必填；更新时为空则忽略'
+      type: string
+    visibility:
+      enum:
+        - public
+        - members
+        - roles
+      type: string
+    visible_roles:
+      items:
+        enum:
+          - owner
+          - admin
+          - member
+        type: string
+      type: array
+  required:
+    - title
+  type: object
+ContentServerDocUpdateInput:
+  description: '仅更新提供的字段；status 不在本接口更新。有效编辑 version +1；角色数组仅保留 owner/admin/member，roles 至少一个角色。'
+  properties:
+    category_id:
+      description: '0 转为 null；当前控制器不校验分类归属'
+      type: integer
+    content_md:
+      type: string
+    slug:
+      description: '转小写并 trim；仅接受 ^[a-z0-9][a-z0-9-]{0,60}$，无效或冲突自动生成唯一 doc- 标识'
+      type: string
+    title:
+      description: '创建时 trim 后必填；更新时为空则忽略'
+      type: string
+    visibility:
+      enum:
+        - public
+        - members
+        - roles
+      type: string
+    visible_roles:
+      items:
+        enum:
+          - owner
+          - admin
+          - member
+        type: string
+      type: array
+  type: object

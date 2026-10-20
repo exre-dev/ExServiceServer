@@ -1,0 +1,1005 @@
+components:
+  responses:
+    BusinessError:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessErrorBody'
+      description: '业务错误；HTTP 状态码由接口具体分支决定。'
+    SetupRequired:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessErrorBody'
+      description: 系统尚未初始化。
+      headers:
+        X-Setup-Required:
+          description: '值为 1，提示先完成初始化。'
+          schema:
+            enum:
+              - '1'
+            type: string
+  schemas:
+    BusinessErrorBody:
+      properties:
+        msg:
+          description: 中文业务错误消息。
+          type: string
+      required:
+        - msg
+      type: object
+    OAuthAuthorizationCodeRequest:
+      properties:
+        client_id:
+          minLength: 1
+          type: string
+        client_secret:
+          minLength: 1
+          type: string
+          writeOnly: true
+        code:
+          minLength: 1
+          type: string
+        code_verifier:
+          description: '授权请求设置非空 code_challenge 时必填；支持 S256 与 plain。'
+          type: string
+        grant_type:
+          default: authorization_code
+          description: 'OAuth 授权码与设备码流程的数据结构。'
+          enum:
+            - authorization_code
+          type: string
+        redirect_uri:
+          description: 必须与授权请求精确一致。
+          type: string
+      required:
+        - code
+        - client_id
+        - client_secret
+        - redirect_uri
+      type: object
+    OAuthAuthorizationPending:
+      properties:
+        error:
+          enum:
+            - authorization_pending
+          type: string
+      required:
+        - error
+      type: object
+    OAuthDeviceInitRequest:
+      properties:
+        client_id:
+          minLength: 1
+          type: string
+        client_secret:
+          minLength: 1
+          type: string
+          writeOnly: true
+      required:
+        - client_id
+        - client_secret
+      type: object
+    OAuthDeviceInitResponse:
+      properties:
+        data:
+          properties:
+            device_code:
+              pattern: '^[A-Za-z0-9_-]{43}$'
+              type: string
+            expires_in:
+              enum:
+                - 600
+              type: integer
+            interval:
+              enum:
+                - 5
+              type: integer
+            sso_request_id:
+              pattern: '^[A-Za-z0-9_-]{43}$'
+              type: string
+            user_code:
+              pattern: '^[0-9]{6}$'
+              type: string
+            verification_uri_web:
+              description: '配置 userweb.base_url 后为其 /login?ssoRequestId=... 地址，否则 null。'
+              nullable: true
+              type: string
+            verification_url:
+              enum:
+                - /oauth/device
+              type: string
+          required:
+            - device_code
+            - user_code
+            - sso_request_id
+            - verification_url
+            - verification_uri_web
+            - expires_in
+            - interval
+          type: object
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    OAuthDeviceTokenRequest:
+      properties:
+        client_id:
+          minLength: 1
+          type: string
+        client_secret:
+          minLength: 1
+          type: string
+          writeOnly: true
+        device_code:
+          minLength: 1
+          type: string
+      required:
+        - client_id
+        - client_secret
+        - device_code
+      type: object
+    OAuthTokenResponse:
+      properties:
+        data:
+          properties:
+            access_token:
+              type: string
+            expires_in:
+              description: 会话令牌有效秒数。
+              type: integer
+            scope:
+              description: '空格分隔的授权 scope；当前实现不签发 refresh_token。'
+              type: string
+            token_type:
+              enum:
+                - Bearer
+              type: string
+          required:
+            - access_token
+            - token_type
+            - expires_in
+            - scope
+          type: object
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    PluginBindSelfRequest:
+      properties:
+        ident:
+          description: 游戏标识；去除两端空白后不能为空。
+          minLength: 1
+          type: string
+        ident_type:
+          default: fivem_license
+          enum:
+            - fivem_license
+            - steam
+            - discord
+            - qq
+          type: string
+      required:
+        - ident
+      type: object
+    PluginBindSelfResponse:
+      properties:
+        data:
+          oneOf:
+            -
+              properties:
+                ident_tail:
+                  description: 省略号加标识末尾最多八个字符。
+                  type: string
+                joined_server:
+                  type: boolean
+              required:
+                - ident_tail
+                - joined_server
+              type: object
+            -
+              description: '标识已属于当前账号时返回 []，msg 为已绑定提示。'
+              items: {}
+              maxItems: 0
+              type: array
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    PluginBindTicketRequest:
+      properties:
+        bind_code:
+          description: 'X-Bind-Code 请求头为空时的绑定码回退；请求头非空时优先使用请求头。'
+          type: string
+        ident:
+          description: 游戏标识；去除两端空白后不能为空。
+          minLength: 1
+          type: string
+        ident_type:
+          default: fivem_license
+          enum:
+            - fivem_license
+            - steam
+            - discord
+            - qq
+          type: string
+      required:
+        - ident
+      type: object
+    PluginBindTicketResponse:
+      properties:
+        data:
+          properties:
+            expires_in:
+              enum:
+                - 300
+              type: integer
+            ticket:
+              description: 保留前导零的六位数字字符串。
+              pattern: '^[0-9]{6}$'
+              type: string
+          required:
+            - ticket
+            - expires_in
+          type: object
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    PluginFeatures:
+      description: '功能键到布尔值的映射；PHP 空数组序列化为 []，从 0 开始的连续数字键会序列化为布尔数组。'
+      oneOf:
+        -
+          additionalProperties:
+            type: boolean
+          type: object
+        -
+          items:
+            type: boolean
+          type: array
+    PluginLicenseRequest:
+      properties:
+        bind_code:
+          description: 'X-Bind-Code 请求头为空时的绑定码回退；请求头非空时优先使用请求头。'
+          type: string
+        server_key_hash:
+          description: 'SDK 发送 sv_licenseKey 的 SHA-256；后端仅校验非空，不强制长度或散列格式。'
+          minLength: 1
+          type: string
+      required:
+        - server_key_hash
+      type: object
+    PluginLicenseResponse:
+      properties:
+        data:
+          properties:
+            expires_time:
+              description: '数据库字符串时间；null 或空字符串表示长期，不保证 RFC 3339 格式。'
+              nullable: true
+              type: string
+            features:
+              $ref: '#/components/schemas/PluginFeatures'
+            plugin:
+              type: string
+            status:
+              enum:
+                - active
+                - revoked
+                - expired
+                - disabled
+                - server_mismatch
+                - plugin_offline
+                - server_suspended
+              type: string
+            sync_token:
+              description: '用于同步的 MD5 字符串。'
+              type: string
+          required:
+            - status
+            - plugin
+            - features
+            - expires_time
+            - sync_token
+          type: object
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    PluginMemberPermission:
+      properties:
+        allowed:
+          type: boolean
+        features:
+          $ref: '#/components/schemas/PluginFeatures'
+        ident:
+          type: string
+      required:
+        - ident
+        - allowed
+        - features
+      type: object
+    PluginOAuthIdent:
+      properties:
+        type:
+          type: string
+        value:
+          type: string
+      required:
+        - type
+        - value
+      type: object
+    PluginOAuthPermission:
+      properties:
+        allowed:
+          type: boolean
+        features:
+          $ref: '#/components/schemas/PluginFeatures'
+        plugin:
+          type: string
+        server:
+          nullable: true
+          type: string
+      required:
+        - server
+        - plugin
+        - allowed
+        - features
+      type: object
+    PluginOAuthServer:
+      properties:
+        name:
+          nullable: true
+          type: string
+        role:
+          type: string
+        slug:
+          nullable: true
+          type: string
+      required:
+        - name
+        - slug
+        - role
+      type: object
+    PluginOAuthUserInfoResponse:
+      properties:
+        data:
+          properties:
+            avatar:
+              type: string
+            email:
+              description: '仅 user.email scope 返回。'
+              type: string
+            id:
+              type: integer
+            idents:
+              description: '仅 idents.read scope 返回。'
+              items:
+                $ref: '#/components/schemas/PluginOAuthIdent'
+              type: array
+            perms:
+              description: '仅 perms.read scope 返回。'
+              items:
+                $ref: '#/components/schemas/PluginOAuthPermission'
+              type: array
+            servers:
+              description: '仅 servers.read scope 返回。'
+              items:
+                $ref: '#/components/schemas/PluginOAuthServer'
+              type: array
+            username:
+              type: string
+          required:
+            - id
+            - username
+            - avatar
+          type: object
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    PluginPermissionBatchResponse:
+      properties:
+        data:
+          properties:
+            list:
+              items:
+                $ref: '#/components/schemas/PluginMemberPermission'
+              type: array
+          required:
+            - list
+          type: object
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    PluginPermissionRevisionResponse:
+      properties:
+        data:
+          properties:
+            rev:
+              type: integer
+          required:
+            - rev
+          type: object
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+    PluginTelemetryRequest:
+      properties:
+        bind_code:
+          description: 'X-Bind-Code 请求头为空时的绑定码回退；请求头非空时优先使用请求头。'
+          type: string
+        data:
+          description: '调用方自定义遥测载荷，当前实现不限制结构；省略时为 null。'
+        event:
+          default: ''
+          description: 当前实现不校验必填，省略时记录空字符串。
+          type: string
+        message:
+          default: ''
+          type: string
+      type: object
+    PluginTelemetryResponse:
+      properties:
+        data:
+          items: {}
+          maxItems: 0
+          type: array
+        msg:
+          type: string
+      required:
+        - msg
+        - data
+      type: object
+  securitySchemes:
+    bindCodeAuth:
+      description: 插件绑定码。
+      in: header
+      name: X-Bind-Code
+      type: apiKey
+    oauthBearer:
+      description: 'OAuth 访问令牌。'
+      scheme: bearer
+      type: http
+    sessionAuth:
+      description: '会话 JWT，保留会话撤销和用户状态校验。'
+      scheme: bearer
+      type: http
+info:
+  description: '由 PHP 接口元数据生成；服务器地址相对于当前部署根路径。'
+  title: 'EXRE 社区 API'
+  version: 1.0.0
+openapi: 3.0.3
+paths:
+  /api/oauth/device/init:
+    post:
+      description: '仅 active plugin 应用可用。client_id/client_secret 在请求 body 中传递；返回设备码、六位用户码及供用户网站使用的 sso_request_id，有效 600 秒。'
+      operationId: createOAuthDeviceAuthorization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthDeviceInitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OAuthDeviceInitRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthDeviceInitResponse'
+          description: 操作成功。
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security: []
+      summary: 发起插件设备码授权
+      tags:
+        - 'OAuth 授权'
+      x-audience: public
+  /api/oauth/device/token:
+    post:
+      description: '仅 active plugin 应用可用，客户端凭证在请求 body 中传递。等待用户确认时 HTTP 200 返回裸 {error: authorization_pending}；授权后一次性消费设备码并返回 {msg,data} 令牌信封。过期、重复消费、应用不匹配为 400；建议按初始化返回的 5 秒间隔轮询，当前实现未强制间隔。'
+      operationId: pollOAuthDeviceToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthDeviceTokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OAuthDeviceTokenRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    $ref: '#/components/schemas/OAuthTokenResponse'
+                  -
+                    $ref: '#/components/schemas/OAuthAuthorizationPending'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security: []
+      summary: 轮询设备授权并换取访问令牌
+      tags:
+        - 'OAuth 授权'
+      x-audience: public
+  /api/oauth/token:
+    post:
+      description: '客户端凭证在请求 body 中传递，不支持 HTTP Basic。grant_type 省略时为 authorization_code；授权码有效 300 秒、一次性消费；redirect_uri 与 PKCE 不匹配时仍已消费授权码。不签发 refresh_token。'
+      operationId: exchangeOAuthAuthorizationCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthAuthorizationCodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OAuthAuthorizationCodeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthTokenResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security: []
+      summary: 使用授权码换取访问令牌
+      tags:
+        - 'OAuth 授权'
+      x-audience: public
+  /api/open/ident/bind-self:
+    post:
+      description: '需要 idents.read scope（缺少时为 400）；已绑定其他账号或空间成员被封禁为 400。插件类应用会把新绑定用户加入所属空间；标识已属于当前账号时返回 data: [] 与重复绑定提示。'
+      operationId: bindOAuthGameIdentity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PluginBindSelfRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PluginBindSelfRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginBindSelfResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          oauthBearer: []
+      summary: '绑定当前 OAuth 用户游戏标识'
+      tags:
+        - 'OAuth 用户资源'
+      x-audience: public
+  /api/open/ident/bind-ticket:
+    post:
+      description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。一次性六位数字票据有效 300 秒，由空间管理员录入消费。'
+      operationId: createPluginBindTicket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PluginBindTicketRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PluginBindTicketRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginBindTicketResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          bindCodeAuth: []
+      summary: 生成游戏标识绑定票据
+      tags:
+        - 开放插件
+      x-audience: public
+  /api/open/license/validate:
+    post:
+      description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。首次 active 校验锁定服务器哈希并记录心跳；状态 revoked、disabled、expired、plugin_offline、server_suspended、server_mismatch 均为 HTTP 200 data.status。未知绑定码只有 403，不会返回 unknown_code 状态。'
+      operationId: validatePluginLicense
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PluginLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PluginLicenseRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginLicenseResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          bindCodeAuth: []
+      summary: 校验插件许可与心跳
+      tags:
+        - 开放插件
+      x-audience: public
+  /api/open/perm/batch:
+    get:
+      description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。GET 推荐使用请求头鉴权；返回全部 active 成员的 fivem_license 标识与最终权限，缓存 60 秒。'
+      operationId: getPluginPermissions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginPermissionBatchResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          bindCodeAuth: []
+      summary: 批量获取空间成员插件权限
+      tags:
+        - 开放插件
+      x-audience: public
+  /api/open/perm/rev:
+    get:
+      description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。GET 推荐使用请求头鉴权；未初始化的权限版本为 0。'
+      operationId: getPluginPermissionRevision
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginPermissionRevisionResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          bindCodeAuth: []
+      summary: 获取权限版本号
+      tags:
+        - 开放插件
+      x-audience: public
+  /api/open/telemetry:
+    post:
+      description: '绑定码通过 X-Bind-Code 请求头传入；请求头为空时回退读取请求 body.bind_code，非空请求头优先。缺失或未知绑定码返回 403。绑定码非 active、已过期、插件不在线或空间非 active 时返回 400。遥测写入本地日志；event、message 与 data 当前均可省略。成功 data 为 []。'
+      operationId: submitPluginTelemetry
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PluginTelemetryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PluginTelemetryRequest'
+        required: false
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginTelemetryResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          bindCodeAuth: []
+      summary: 提交插件遥测事件
+      tags:
+        - 开放插件
+      x-audience: public
+  /api/open/userinfo:
+    get:
+      description: 'Bearer 必须对应有效 OAuth 会话、有效应用和未撤销授权。基础字段始终返回；email、idents、servers、perms 分别受 user.email、idents.read、servers.read、perms.read scope 控制。'
+      operationId: getOAuthUserInfo
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginOAuthUserInfoResponse'
+          description: 操作成功。
+        '400':
+          $ref: '#/components/responses/BusinessError'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          oauthBearer: []
+      summary: '获取 OAuth 用户信息'
+      tags:
+        - 'OAuth 用户资源'
+      x-audience: public
+  /oauth/authorize:
+    get:
+      description: '免登录返回 HTML；页面自行要求登录并调用内部 authorize-info 与 authorize/confirm。查询参数由 HTML 脚本读取，服务端页面动作本身不校验参数。'
+      operationId: showOAuthAuthorizationPage
+      parameters:
+        -
+          description: 'HTML 确认页读取的应用标识。'
+          in: query
+          name: client_id
+          required: false
+          schema:
+            type: string
+        -
+          description: 'HTML 确认页读取的回调地址。'
+          in: query
+          name: redirect_uri
+          required: false
+          schema:
+            type: string
+        -
+          description: 'HTML 确认页原样传给授权确认接口的状态。'
+          in: query
+          name: state
+          required: false
+          schema:
+            type: string
+        -
+          description: '空格分隔的申请 scope。'
+          in: query
+          name: scope
+          required: false
+          schema:
+            type: string
+        -
+          description: '可选 PKCE challenge。'
+          in: query
+          name: code_challenge
+          required: false
+          schema:
+            type: string
+        -
+          description: 'S256 或 plain。'
+          in: query
+          name: code_challenge_method
+          required: false
+          schema:
+            default: plain
+            type: string
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: '浏览器 HTML 页面。'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security: []
+      summary: '显示 OAuth 授权确认页面'
+      tags:
+        - 'OAuth 页面'
+      x-audience: public
+  /oauth/device:
+    get:
+      description: '当前实现 page 不在 noNeedLogin 列表中，因此全局 CheckLogin 先要求有效 Bearer 会话；缺失或无效返回 JSON 401，用户封禁返回 403，成功才返回 HTML。页面随后使用六位用户码调用内部 device/verify。'
+      operationId: showOAuthDevicePage
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+          description: '浏览器 HTML 页面。'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 登录态或客户端凭证无效、访问令牌无效或授权已撤销。
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessErrorBody'
+          description: 身份被禁用、绑定码缺失或无效，或请求频率受限。
+        '503':
+          $ref: '#/components/responses/SetupRequired'
+      security:
+        -
+          sessionAuth: []
+      summary: 显示设备码验证页面
+      tags:
+        - 'OAuth 页面'
+      x-audience: public
+servers:
+  -
+    url: /
+tags:
+  -
+    description: 账号
+    name: 账号
+  -
+    description: 平台管理端
+    name: 平台管理端
+  -
+    description: 文档浏览
+    name: 文档浏览
+  -
+    description: 通知
+    name: 通知
+  -
+    description: 'OAuth 页面'
+    name: 'OAuth 页面'
+  -
+    description: '内部 OAuth'
+    name: '内部 OAuth'
+  -
+    description: 'OAuth 授权'
+    name: 'OAuth 授权'
+  -
+    description: '内部 SSO'
+    name: '内部 SSO'
+  -
+    description: 开放插件
+    name: 开放插件
+  -
+    description: 'OAuth 用户资源'
+    name: 'OAuth 用户资源'
+  -
+    description: 空间管理
+    name: 空间管理
+  -
+    description: 存储
+    name: 存储
+  -
+    description: 反馈
+    name: 反馈
+  -
+    description: 系统
+    name: 系统

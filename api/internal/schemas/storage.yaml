@@ -1,0 +1,91 @@
+StoragePrepareData:
+  properties:
+    maxBytes:
+      enum:
+        - 20971520
+      type: integer
+    medium:
+      enum:
+        - file
+      type: string
+  required:
+    - medium
+    - maxBytes
+  type: object
+StoragePrepareRequest:
+  properties:
+    contentType:
+      description: '合法 type/subtype，不接受参数'
+      maxLength: 127
+      type: string
+    key:
+      description: '小写分段路径，禁止 Windows 保留设备名'
+      maxLength: 240
+      minLength: 1
+      pattern: '^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?(?:/[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?)*$'
+      type: string
+    medium:
+      enum:
+        - file
+        - cos
+      type: string
+    size:
+      description: '超过 20MiB 返回 413'
+      type: integer
+  required:
+    - key
+    - size
+    - contentType
+  type: object
+StoragePrepareResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/StoragePrepareData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
+StorageUploadData:
+  properties:
+    url:
+      format: uri
+      type: string
+  required:
+    - url
+  type: object
+StorageUploadRequest:
+  properties:
+    contentType:
+      description: '合法 type/subtype，不接受参数'
+      maxLength: 127
+      type: string
+    data:
+      description: '文件字节，最多 20MiB'
+      format: binary
+      type: string
+    key:
+      description: '小写分段路径，禁止 Windows 保留设备名'
+      maxLength: 240
+      minLength: 1
+      pattern: '^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?(?:/[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?)*$'
+      type: string
+    medium:
+      enum:
+        - file
+      type: string
+  required:
+    - key
+    - data
+  type: object
+StorageUploadResponse:
+  properties:
+    data:
+      $ref: '../openapi.yaml#/components/schemas/StorageUploadData'
+    msg:
+      type: string
+  required:
+    - msg
+    - data
+  type: object
