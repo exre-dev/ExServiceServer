@@ -27,6 +27,12 @@ PHP 脚本需安装 Composer 依赖，并使用兼容当前 lock 的解释器（
 
 修改接口元数据或 schema 后，运行 `composer api:generate` 更新 `api/public/`、`api/internal/` 的入口与模块片段，以及 `api/generated/` 的完整单文件，再运行工具行为测试及 lint/check。修改布局或引用逻辑时，还需验证拆分版合并后的契约与完整文档等价，公开目录可独立解析，不依赖内部版。它们证明契约可生成、归属互斥、路由覆盖及产物一致性；不能代替成功、输入错误、鉴权等真实 HTTP 行为验证。新增或修改业务行为时按影响执行相关接口测试并单独报告。
 
+## GitHub CI
+
+`.github/workflows/ci.yml` 在面向 `master` 的 PR、`master` 推送和手动触发时运行。使用 PHP 8.4 安装锁定的 Composer 依赖，检查后端 PHP 语法，执行 `composer api:lint`、`composer api:check`，再以独立进程依次运行上表中的 5 个 PHP 测试。`ci-gate` 仅在这些步骤全部成功后通过。
+
+数据库测试连接本次 CI 创建的 PostgreSQL 18、Redis 7.4 临时服务。PostgreSQL 测试账号具有创建和删除临时数据库的权限，测试沿用独立 schema、数据库和 Redis 前缀的隔离与清理规则。CI 不安装前端依赖，不构建或测试 `web/admin-web/`，不运行浏览器测试。
+
 ## 用例与数据
 
 - 围绕可观察行为编写断言，覆盖成功、输入错误和适用的鉴权分支；校验状态码、响应结构与数据副作用。

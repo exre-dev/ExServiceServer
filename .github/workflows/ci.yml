@@ -1,0 +1,110 @@
+name: PHP CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: php-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: exservice_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: php-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d exservice_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # 仅连接本次 CI 的临时服务；安装测试需要创建和删除临时数据库。
+    env:
+      PG_HOST: 127.0.0.1
+      PG_PORT: '5432'
+      PG_DB: exservice_test
+      PG_USER: postgres
+      PG_PASSWORD: php-ci-password
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_DATABASE: '0'
+      REDIS_PASSWORD: ''
+      BOT_ENABLE: 'false'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, redis, gd, mbstring
+          tools: composer:v2
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Check PHP syntax
+        run: git ls-files -z -- '*.php' ':!:web/**' | xargs -0 -r -n 1 php -l
+
+      - name: Check OpenAPI definitions and generated artifacts
+        run: |
+          composer api:lint
+          composer api:check
+
+      # 每个 PHP 测试使用独立进程；不运行 admin-web 或浏览器测试。
+      - name: Test OpenAPI generation
+        run: php tests/openapi.php
+
+      - name: Test feedback uploads
+        run: php tests/feedback_upload.php
+
+      - name: Test registration email
+        run: php tests/registration_email.php
+
+      - name: Test installation
+        run: php tests/installation.php
+
+      - name: Test SSO
+        run: php tests/sso_flow.php
+
+  ci-gate:
+    name: ci-gate
+    if: ${{ always() }}
+    needs: [php-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require PHP checks to pass
+        env:
+          PHP_TESTS_RESULT: ${{ needs.php-tests.result }}
+        run: test "$PHP_TESTS_RESULT" = success
