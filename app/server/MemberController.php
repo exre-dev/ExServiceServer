@@ -2,8 +2,6 @@
 
 namespace app\server;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\middleware\ServerMember;
 use app\common\model\ServerMemberModel;
@@ -21,63 +19,6 @@ class MemberController
   /**
    * 成员列表
    */
-  #[OA\Get(
-    path: '/api/server/{sid}/members',
-    operationId: 'serverMemberList',
-    summary: '成员列表',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。包含 active/banned/left 全部成员，按 ID 倒序，user 仅选取 id/email/username/avatar/qq。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerMembersData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function index(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -96,77 +37,6 @@ class MemberController
   /**
    * 添加成员（按邮箱或 QQ 精确匹配用户库; 已离开成员重新激活）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/members',
-    operationId: 'serverMemberAdd',
-    summary: '添加或重新激活成员',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。keyword 精确匹配邮箱或 QQ；拒绝平台封禁用户、现有 owner 或 banned 成员；仅 owner 可授予 admin。已离开成员重新激活。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/ServerMemberAddInput'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/ServerMemberAddInput',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function add(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -232,84 +102,6 @@ class MemberController
   /**
    * 调整成员角色（仅 Owner）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/members/{uid}/role',
-    operationId: 'serverMemberRole',
-    summary: '调整成员角色',
-    description: '需要当前空间 active 成员身份及 owner 角色；权限或空间不存在按当前实现返回 400。不能调整 owner；目标用户按当前空间查找。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'uid',
-        in: 'path',
-        required: true,
-        description: '目标用户 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/ServerMemberRoleInput'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/ServerMemberRoleInput',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function role(Request $request, int $sid, int $uid): Response
   {
     ServerMember::assertOwner($request);
@@ -343,72 +135,6 @@ class MemberController
   /**
    * 移除成员（软离开 left）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/members/{uid}/remove',
-    operationId: 'serverMemberRemove',
-    summary: '移除成员',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。状态改为 left。不能操作自己或 owner，admin 只能操作 member。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'uid',
-        in: 'path',
-        required: true,
-        description: '目标用户 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function remove(Request $request, int $sid, int $uid): Response
   {
     ServerMember::assertManager($request);
@@ -434,72 +160,6 @@ class MemberController
   /**
    * 禁用成员（banned, 游戏权限判定按非成员处理）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/members/{uid}/ban',
-    operationId: 'serverMemberBan',
-    summary: '禁用成员',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。状态改为 banned，权限判定按非成员处理。不能操作自己或 owner，admin 只能操作 member。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'uid',
-        in: 'path',
-        required: true,
-        description: '目标用户 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function ban(Request $request, int $sid, int $uid): Response
   {
     ServerMember::assertManager($request);
@@ -525,72 +185,6 @@ class MemberController
   /**
    * 解除禁用
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/members/{uid}/unban',
-    operationId: 'serverMemberUnban',
-    summary: '解除成员禁用',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。目标必须为 banned 且非 owner。当前动作没有禁止操作自己/admin 的额外检查。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'uid',
-        in: 'path',
-        required: true,
-        description: '目标用户 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function unban(Request $request, int $sid, int $uid): Response
   {
     ServerMember::assertManager($request);

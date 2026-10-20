@@ -7,7 +7,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountGrantsResponse'
+              $ref: '../schemas/account.yaml#/AccountGrantsResponse'
         description: 成功
       '401':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -16,8 +16,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 查看本人第三方授权
     tags:
       - 账号
@@ -27,8 +26,7 @@
     description: '撤销对某应用的授权（该应用名下我的 token 立即失效）'
     operationId: accountRevokeGrant
     parameters:
-      -
-        in: path
+      - in: path
         name: client_id
         required: true
         schema:
@@ -38,7 +36,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountRevokedSessionsResponse'
+              $ref: '../schemas/account.yaml#/AccountRevokedSessionsResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -49,8 +47,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 撤销授权及关联会话
     tags:
       - 账号
@@ -63,17 +60,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountAdminLoginRequest'
+            $ref: '../schemas/account.yaml#/AccountAdminLoginRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountAdminLoginRequest'
+            $ref: '../schemas/account.yaml#/AccountAdminLoginRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountLoginResponse'
+              $ref: '../schemas/account.yaml#/AccountLoginResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -97,7 +94,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountEmptyResponse'
+              $ref: '../schemas/account.yaml#/AccountEmptyResponse'
         description: 成功
       '401':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -106,8 +103,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 撤销当前会话
     tags:
       - 账号
@@ -121,7 +117,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+              $ref: '../schemas/account.yaml#/AccountMeResponse'
         description: 成功
       '401':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -130,8 +126,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 当前登录用户
     tags:
       - 账号
@@ -144,17 +139,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountPasswordRequest'
+            $ref: '../schemas/account.yaml#/AccountPasswordRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountPasswordRequest'
+            $ref: '../schemas/account.yaml#/AccountPasswordRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountRevokedSessionsResponse'
+              $ref: '../schemas/account.yaml#/AccountRevokedSessionsResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -165,8 +160,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 修改密码并下线其他设备
     tags:
       - 账号
@@ -179,17 +173,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountRegisterRequest'
+            $ref: '../schemas/account.yaml#/AccountRegisterRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountRegisterRequest'
+            $ref: '../schemas/account.yaml#/AccountRegisterRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountLoginResponse'
+              $ref: '../schemas/account.yaml#/AccountLoginResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -210,17 +204,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+            $ref: '../schemas/account.yaml#/AccountEmailRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+            $ref: '../schemas/account.yaml#/AccountEmailRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountEmailCodeResponse'
+              $ref: '../schemas/account.yaml#/AccountEmailCodeResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -230,7 +224,7 @@
         content:
           text/html:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountUnhandledErrorBody'
+              $ref: '../schemas/account.yaml#/AccountUnhandledErrorBody'
         description: '注解限流异常由现有 ApiHandler 转成 500'
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
@@ -248,7 +242,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountSessionsResponse'
+              $ref: '../schemas/account.yaml#/AccountSessionsResponse'
         description: 成功
       '401':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -257,8 +251,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 最近一百条登录会话
     tags:
       - 账号
@@ -272,7 +265,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountRevokeAllResponse'
+              $ref: '../schemas/account.yaml#/AccountRevokeAllResponse'
         description: 成功
       '401':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -281,8 +274,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 撤销除当前以外所有会话
     tags:
       - 账号
@@ -292,8 +284,7 @@
     description: 撤销指定会话（下线某设备）
     operationId: accountRevokeSession
     parameters:
-      -
-        in: path
+      - in: path
         name: sid
         required: true
         schema:
@@ -303,7 +294,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountEmptyResponse'
+              $ref: '../schemas/account.yaml#/AccountEmptyResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -314,8 +305,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 撤销本人指定会话
     tags:
       - 账号
@@ -329,7 +319,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountCaptchaResponse'
+              $ref: '../schemas/account.yaml#/AccountCaptchaResponse'
         description: 成功
       '403':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -337,7 +327,7 @@
         content:
           text/html:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountUnhandledErrorBody'
+              $ref: '../schemas/account.yaml#/AccountUnhandledErrorBody'
         description: '注解限流异常由现有 ApiHandler 转成 500'
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
@@ -354,17 +344,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+            $ref: '../schemas/account.yaml#/AccountEmailRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+            $ref: '../schemas/account.yaml#/AccountEmailRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountInvitationCheckResponse'
+              $ref: '../schemas/account.yaml#/AccountInvitationCheckResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -387,17 +377,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+            $ref: '../schemas/account.yaml#/AccountEmailRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountEmailRequest'
+            $ref: '../schemas/account.yaml#/AccountEmailRequest'
       required: true
     responses:
       '202':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountInvitationCodeResponse'
+              $ref: '../schemas/account.yaml#/AccountInvitationCodeResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -409,7 +399,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+              $ref: '../schemas/common.yaml#/BusinessErrorBody'
         description: 发送冷却或连续失败锁定
         headers:
           Retry-After:
@@ -431,17 +421,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountInvitationCompleteRequest'
+            $ref: '../schemas/account.yaml#/AccountInvitationCompleteRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountInvitationCompleteRequest'
+            $ref: '../schemas/account.yaml#/AccountInvitationCompleteRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountInvitationCompleteResponse'
+              $ref: '../schemas/account.yaml#/AccountInvitationCompleteResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -466,17 +456,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountInvitationVerifyRequest'
+            $ref: '../schemas/account.yaml#/AccountInvitationVerifyRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountInvitationVerifyRequest'
+            $ref: '../schemas/account.yaml#/AccountInvitationVerifyRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountInvitationVerifyResponse'
+              $ref: '../schemas/account.yaml#/AccountInvitationVerifyResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -488,7 +478,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/BusinessErrorBody'
+              $ref: '../schemas/common.yaml#/BusinessErrorBody'
         description: 发送冷却或连续失败锁定
         headers:
           Retry-After:
@@ -510,17 +500,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountLoginRequest'
+            $ref: '../schemas/account.yaml#/AccountLoginRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountLoginRequest'
+            $ref: '../schemas/account.yaml#/AccountLoginRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountLoginResponse'
+              $ref: '../schemas/account.yaml#/AccountLoginResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -543,7 +533,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountEmptyResponse'
+              $ref: '../schemas/account.yaml#/AccountEmptyResponse'
         description: 成功
       '401':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -552,8 +542,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 撤销当前会话
     tags:
       - 账号
@@ -566,7 +555,7 @@
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+              $ref: '../schemas/account.yaml#/AccountMeResponse'
         description: 成功
       '401':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -575,8 +564,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 当前登录用户
     tags:
       - 账号
@@ -588,17 +576,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountProfileRequest'
+            $ref: '../schemas/account.yaml#/AccountProfileRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountProfileRequest'
+            $ref: '../schemas/account.yaml#/AccountProfileRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+              $ref: '../schemas/account.yaml#/AccountMeResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -609,8 +597,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: '更新昵称、QQ 或清除头像'
     tags:
       - 账号
@@ -623,17 +610,17 @@
       content:
         application/json:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountAvatarRequest'
+            $ref: '../schemas/account.yaml#/AccountAvatarRequest'
         application/x-www-form-urlencoded:
           schema:
-            $ref: '../openapi.yaml#/components/schemas/AccountAvatarRequest'
+            $ref: '../schemas/account.yaml#/AccountAvatarRequest'
       required: true
     responses:
       '200':
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AccountMeResponse'
+              $ref: '../schemas/account.yaml#/AccountMeResponse'
         description: 成功
       '400':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
@@ -646,8 +633,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: '上传头像并转换为 WebP'
     tags:
       - 账号
@@ -657,8 +643,7 @@
     description: '读取头像图片（公开, /api/avatars/{avatarId}）'
     operationId: accountAvatarImage
     parameters:
-      -
-        in: path
+      - in: path
         name: avatarId
         required: true
         schema:

@@ -2,8 +2,6 @@
 
 namespace app\open;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\model\ServerMemberModel;
 use app\common\model\UserIdentModel;
@@ -27,46 +25,6 @@ class OAuthUserController
   /**
    * 用户信息（scope 硬过滤）
    */
-  #[OA\Get(
-    path: '/api/open/userinfo',
-    operationId: 'getOAuthUserInfo',
-    summary: '获取 OAuth 用户信息',
-    description: 'Bearer 必须对应有效 OAuth 会话、有效应用和未撤销授权。基础字段始终返回；email、idents、servers、perms 分别受 user.email、idents.read、servers.read、perms.read scope 控制。',
-    tags: ['OAuth 用户资源'],
-    security: [['oauthBearer' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/PluginOAuthUserInfoResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function userinfo(Request $request): Response
   {
     $user = UserModel::find($request->oauth_user_id);
@@ -151,63 +109,6 @@ class OAuthUserController
    * 玩家自绑定（插件拿到用户令牌后调用: 把当前游戏 ident 绑到该用户;
    * 插件类应用自动让用户加入归属空间）
    */
-  #[OA\Post(
-    path: '/api/open/ident/bind-self',
-    operationId: 'bindOAuthGameIdentity',
-    summary: '绑定当前 OAuth 用户游戏标识',
-    description: '需要 idents.read scope（缺少时为 400）；已绑定其他账号或空间成员被封禁为 400。插件类应用会把新绑定用户加入所属空间；标识已属于当前账号时返回 data: [] 与重复绑定提示。',
-    tags: ['OAuth 用户资源'],
-    security: [['oauthBearer' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/PluginBindSelfRequest',
-          ),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/PluginBindSelfRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/PluginBindSelfResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function bind_self(Request $request): Response
   {
     $scopes = (array) $request->oauth_scopes;

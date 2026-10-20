@@ -2,8 +2,6 @@
 
 namespace app\oauth;
 
-use OpenApi\Attributes as OA;
-
 use app\common\services\OAuthService;
 use app\common\services\SessionService;
 use support\Request;
@@ -21,63 +19,6 @@ class TokenController
   /** 机器接口不走登录 */
   protected $noNeedLogin = '*';
 
-  #[OA\Post(
-    path: '/api/oauth/token',
-    operationId: 'exchangeOAuthAuthorizationCode',
-    summary: '使用授权码换取访问令牌',
-    description: '客户端凭证在请求 body 中传递，不支持 HTTP Basic。grant_type 省略时为 authorization_code；授权码有效 300 秒、一次性消费；redirect_uri 与 PKCE 不匹配时仍已消费授权码。不签发 refresh_token。',
-    tags: ['OAuth 授权'],
-    security: [],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthAuthorizationCodeRequest',
-          ),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthAuthorizationCodeRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/OAuthTokenResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function issue(Request $request): Response
   {
     $grantType = (string) $request->post('grant_type', 'authorization_code');

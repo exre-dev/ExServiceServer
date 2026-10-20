@@ -5,15 +5,22 @@
     "prepare": "husky",
     "format": "prettier --write \"**/*.{php,ts,js,jsx,tsx,mjs,cjs}\"",
     "format:check": "prettier --check \"**/*.{php,ts,js,jsx,tsx,mjs,cjs}\"",
+    "api:format": "prettier --write \"api/**/*.yaml\"",
+    "api:format:check": "prettier --check \"api/**/*.yaml\"",
+    "api:lint": "node scripts/openapi.mjs lint",
+    "api:check": "node scripts/openapi.mjs check",
+    "test:api": "node --test tests/openapi.test.mjs",
     "test:hooks": "node --test tests/pre-commit.test.mjs"
   },
   "engines": {
     "node": ">=22.22.1"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "13.1.0",
     "@prettier/plugin-php": "0.26.0",
     "husky": "9.1.7",
     "lint-staged": "17.6.0",
-    "prettier": "3.9.10"
+    "prettier": "3.9.10",
+    "yaml": "2.9.1"
   }
 }

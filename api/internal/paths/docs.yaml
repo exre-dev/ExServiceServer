@@ -3,22 +3,19 @@
     description: '免登录，可选 sessionAuth Bearer；只有 JWT 和会话均有效且用户匹配才识别身份，无效令牌按匿名处理。public 任何人可见；ops/superadmin 可查看全部已发布文档；login 需有效登录，servers 需指定空间 active 成员，tags 需标签交集；空间 members 需 active 成员，roles 对 owner/admin 恒可见、普通成员需匹配 visible_roles。只选已发布文档，先按 ID 倒序取前 100 条再进行可见性过滤，因此结果可能少于 100；不返回正文。'
     operationId: contentDocumentList
     parameters:
-      -
-        description: '大于 0 时筛选所属空间'
+      - description: '大于 0 时筛选所属空间'
         in: query
         name: server_id
         required: false
         schema:
           type: integer
-      -
-        description: '大于 0 时筛选分类'
+      - description: '大于 0 时筛选分类'
         in: query
         name: category_id
         required: false
         schema:
           type: integer
-      -
-        description: 标题模糊匹配
+      - description: 标题模糊匹配
         in: query
         name: keyword
         required: false
@@ -51,8 +48,7 @@
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
       - {}
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 可浏览文档列表
     tags:
       - 文档浏览
@@ -62,8 +58,7 @@
     description: '免登录，可选 sessionAuth Bearer；只有 JWT 和会话均有效且用户匹配才识别身份，无效令牌按匿名处理。public 任何人可见；ops/superadmin 可查看全部已发布文档；login 需有效登录，servers 需指定空间 active 成员，tags 需标签交集；空间 members 需 active 成员，roles 对 owner/admin 恒可见、普通成员需匹配 visible_roles。查不到或不可见均按当前实现返回 400“文档不存在”，以相同响应避免泄露存在性；成功返回完整模型。'
     operationId: contentDocumentDetail
     parameters:
-      -
-        description: '文档全局唯一 slug'
+      - description: '文档全局唯一 slug'
         in: path
         name: slug
         required: true
@@ -96,8 +91,7 @@
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
       - {}
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 浏览文档正文
     tags:
       - 文档浏览

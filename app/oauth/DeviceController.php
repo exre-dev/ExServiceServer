@@ -2,8 +2,6 @@
 
 namespace app\oauth;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\services\AuditService;
 use app\common\services\OAuthService;
@@ -27,43 +25,6 @@ class DeviceController
   /**
    * 设备码验证页（玩家任意设备打开, 登录 + 输入 user_code 确认）
    */
-  #[OA\Get(
-    path: '/oauth/device',
-    operationId: 'showOAuthDevicePage',
-    summary: '显示设备码验证页面',
-    description: '当前实现 page 不在 noNeedLogin 列表中，因此全局 CheckLogin 先要求有效 Bearer 会话；缺失或无效返回 JSON 401，用户封禁返回 403，成功才返回 HTML。页面随后使用六位用户码调用内部 device/verify。',
-    tags: ['OAuth 页面'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '浏览器 HTML 页面。',
-        content: new OA\MediaType(
-          mediaType: 'text/html',
-          schema: new OA\Schema(type: 'string'),
-        ),
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function page(Request $request): Response
   {
     $html = file_get_contents(app_path('oauth/pages/device.html'));
@@ -77,59 +38,6 @@ class DeviceController
   /**
    * 插件发起设备码流程
    */
-  #[OA\Post(
-    path: '/api/oauth/device/init',
-    operationId: 'createOAuthDeviceAuthorization',
-    summary: '发起插件设备码授权',
-    description: '仅 active plugin 应用可用。client_id/client_secret 在请求 body 中传递；返回设备码、六位用户码及供用户网站使用的 sso_request_id，有效 600 秒。',
-    tags: ['OAuth 授权'],
-    security: [],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthDeviceInitRequest',
-          ),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthDeviceInitRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/OAuthDeviceInitResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function init(Request $request): Response
   {
     $clientId = (string) $request->post('client_id', '');
@@ -171,68 +79,6 @@ class DeviceController
    * 插件轮询换取访问令牌
    * 未确认 → {"error": "authorization_pending"}
    */
-  #[OA\Post(
-    path: '/api/oauth/device/token',
-    operationId: 'pollOAuthDeviceToken',
-    summary: '轮询设备授权并换取访问令牌',
-    description: '仅 active plugin 应用可用，客户端凭证在请求 body 中传递。等待用户确认时 HTTP 200 返回裸 {error: authorization_pending}；授权后一次性消费设备码并返回 {msg,data} 令牌信封。过期、重复消费、应用不匹配为 400；建议按初始化返回的 5 秒间隔轮询，当前实现未强制间隔。',
-    tags: ['OAuth 授权'],
-    security: [],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthDeviceTokenRequest',
-          ),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthDeviceTokenRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          oneOf: [
-            new OA\Schema(ref: '#/components/schemas/OAuthTokenResponse'),
-            new OA\Schema(
-              ref: '#/components/schemas/OAuthAuthorizationPending',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'public'],
-  )]
   public function token(Request $request): Response
   {
     $deviceCode = (string) $request->post('device_code', '');
@@ -286,70 +132,6 @@ class DeviceController
   /**
    * 用户确认设备授权（验证页调用, 需登录态）
    */
-  #[OA\Post(
-    path: '/api/oauth/device/verify',
-    operationId: 'verifyInternalOAuthDevice',
-    summary: '确认六位设备用户码',
-    description: '需要用户会话；校验用户码和应用状态，创建授权关系并原子确认设备。无效、过期或已使用用户码返回 400，并发状态变化返回 409。',
-    tags: ['内部 OAuth'],
-    security: [['sessionAuth' => []]],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'application/json',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthDeviceVerifyRequest',
-          ),
-        ),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/OAuthDeviceVerifyRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/OAuthDeviceVerifyResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态或客户端凭证无效、访问令牌无效或授权已撤销。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '身份被禁用、绑定码缺失或无效，或请求频率受限。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 409,
-        description: '设备请求已完成、已失效、被其他用户处理或应用已停用。',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function verify(Request $request): Response
   {
     $userCode = trim((string) $request->post('user_code', ''));

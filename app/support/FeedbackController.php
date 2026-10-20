@@ -7,7 +7,6 @@ use app\common\model\FeedbackAttachmentModel;
 use app\common\model\FeedbackModel;
 use app\common\services\AuditService;
 use app\common\services\StorageService;
-use OpenApi\Attributes as OA;
 use support\Request;
 use support\Response;
 use Webman\Http\UploadFile;
@@ -41,35 +40,6 @@ class FeedbackController
   /**
    * 表单选项（本部署全类型可用, 无动态字段）
    */
-  #[OA\Get(
-    path: '/api/support/feedback/options',
-    operationId: 'feedbackOptions',
-    summary: '反馈表单选项及大小上限',
-    tags: ['反馈'],
-    security: [['sessionAuth' => []]],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/FeedbackOptionsResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function options(Request $request): Response
   {
     return success([
@@ -100,76 +70,6 @@ class FeedbackController
   /**
    * 提交反馈（prepare: 表单快照 + 附件声明; submissionKey 由客户端生成）
    */
-  #[OA\Post(
-    path: '/api/support/feedback/submissions',
-    operationId: 'feedbackPrepare',
-    summary: '创建或恢复反馈收取快照',
-    tags: ['反馈'],
-    security: [['sessionAuth' => []]],
-    description: '新建返回 201；同一恢复键重放返回 200。',
-    parameters: [
-      new OA\Parameter(
-        name: 'area',
-        in: 'query',
-        required: false,
-        schema: new OA\Schema(
-          type: 'string',
-          enum: ['development', 'community'],
-          default: 'development',
-          description: '未识别值回退 development',
-        ),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/FeedbackPrepareRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/FeedbackPrepareRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 201,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/FeedbackSnapshotResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 200,
-        description: '同一用户与恢复键已存在，返回原快照',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/FeedbackSnapshotResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 413,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function prepare(Request $request): Response
   {
     $post = $request->post();
@@ -271,47 +171,6 @@ class FeedbackController
   /**
    * 按恢复键查反馈
    */
-  #[OA\Get(
-    path: '/api/support/feedback/submissions/lookup',
-    operationId: 'feedbackLookup',
-    summary: '按恢复键查本人反馈',
-    tags: ['反馈'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'submissionKey',
-        in: 'query',
-        required: true,
-        schema: new OA\Schema(type: 'string'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/FeedbackSnapshotResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 404,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function lookup(Request $request): Response
   {
     $key = (string) $request->get('submissionKey', '');
@@ -327,47 +186,6 @@ class FeedbackController
   /**
    * 反馈详情
    */
-  #[OA\Get(
-    path: '/api/support/feedback/submissions/{submissionId}',
-    operationId: 'feedbackDetail',
-    summary: '本人反馈详情',
-    tags: ['反馈'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'submissionId',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/FeedbackSnapshotResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 404,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function detail(Request $request, string $submissionId): Response
   {
     $row = FeedbackModel::where('uuid', $submissionId)
@@ -382,77 +200,6 @@ class FeedbackController
   /**
    * 上传附件（multipart file 字段; sha256/大小须与声明一致）
    */
-  #[OA\Put(
-    path: '/api/support/feedback/submissions/{submissionId}/attachments/{attachmentId}',
-    operationId: 'feedbackUploadAttachment',
-    summary: '上传声明附件',
-    tags: ['反馈'],
-    security: [['sessionAuth' => []]],
-    description: '必须处于 receiving；同一已上传附件返回原快照。新上传字节大小与 SHA-256 必须匹配声明；成功递增 revision。',
-    parameters: [
-      new OA\Parameter(
-        name: 'submissionId',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string'),
-      ),
-      new OA\Parameter(
-        name: 'attachmentId',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\MediaType(
-          mediaType: 'multipart/form-data',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/FeedbackAttachmentUploadRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/FeedbackSnapshotResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 404,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 409,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 413,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/BusinessError',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function attachment_upload(
     Request $request,
     string $submissionId,
@@ -512,68 +259,6 @@ class FeedbackController
   /**
    * 推进（continue: 完成提交; retry: 失败重试重新开放收取）
    */
-  #[OA\Post(
-    path: '/api/support/feedback/submissions/{submissionId}/advance',
-    operationId: 'feedbackAdvance',
-    summary: '按修订号推进反馈',
-    tags: ['反馈'],
-    security: [['sessionAuth' => []]],
-    description: 'continue 要求全部附件到位并完成反馈；retry 返回当前快照；expectedRevision 不匹配返回 409。',
-    parameters: [
-      new OA\Parameter(
-        name: 'submissionId',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/FeedbackAdvanceRequest'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/FeedbackAdvanceRequest',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/FeedbackSnapshotResponse',
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 404,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 409,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function advance(Request $request, string $submissionId): Response
   {
     $post = $request->post();

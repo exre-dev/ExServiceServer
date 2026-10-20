@@ -35,8 +35,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        oauthBearer: []
+      - oauthBearer: []
     summary: '绑定当前 OAuth 用户游戏标识'
     tags:
       - 'OAuth 用户资源'
@@ -72,8 +71,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        bindCodeAuth: []
+      - bindCodeAuth: []
     summary: 生成游戏标识绑定票据
     tags:
       - 开放插件
@@ -109,8 +107,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        bindCodeAuth: []
+      - bindCodeAuth: []
     summary: 校验插件许可与心跳
     tags:
       - 开放插件
@@ -137,8 +134,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        bindCodeAuth: []
+      - bindCodeAuth: []
     summary: 批量获取空间成员插件权限
     tags:
       - 开放插件
@@ -165,8 +161,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        bindCodeAuth: []
+      - bindCodeAuth: []
     summary: 获取权限版本号
     tags:
       - 开放插件
@@ -202,8 +197,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        bindCodeAuth: []
+      - bindCodeAuth: []
     summary: 提交插件遥测事件
     tags:
       - 开放插件
@@ -236,8 +230,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        oauthBearer: []
+      - oauthBearer: []
     summary: '获取 OAuth 用户信息'
     tags:
       - 'OAuth 用户资源'

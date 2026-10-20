@@ -1,3 +1,4 @@
 {
-  "*.{php,ts,js,jsx,tsx,mjs,cjs}": "prettier --write"
+  "*.{php,ts,js,jsx,tsx,mjs,cjs}": "prettier --write",
+  "api/**/*.yaml": "prettier --write"
 }

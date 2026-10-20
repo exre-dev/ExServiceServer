@@ -11,27 +11,29 @@
 
 ## 测试入口
 
-| 命令 | 关键依赖与边界 |
-| --- | --- |
-| `php tests/openapi.php` | OpenAPI 生成工具行为测试，覆盖模块引用、完整文档等价、受控发布及只读检查；使用临时元数据和文件，不依赖数据库、Redis 或运行中的 Webman。 |
-| `composer api:lint` | 使用插件生成并校验文档，核对真实 Webman 路由、operation 归属及输出引用；不执行 Controller 动作。 |
-| `composer api:check` | 重新生成预期文件集合，只读检查两版入口、模块片段、完整单文件及生成清单是否缺失或陈旧。 |
-| `php tests/feedback_upload.php` | 数据库使用替身，实际写入临时文件和上传目录。 |
-| `php tests/registration_email.php` | 真实 PostgreSQL / Redis，邮件使用替身。 |
-| `php tests/installation.php` | 真实 PostgreSQL / Redis，需创建、删除临时数据库的权限。 |
-| `php tests/sso_flow.php` | 真实 PostgreSQL / Redis，使用临时 schema 和 Redis 前缀。 |
-| `node tests/installation_browser.mjs` | 初始化向导交互，API 使用 mock。 |
-| `node tests/sso_browser.mjs` | SSO 浏览器流程，连接真实 PostgreSQL / Redis。 |
+| 命令                                  | 关键依赖与边界                                                                                                               |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `npm run test:api`                    | 手写 YAML 契约工具测试，覆盖模块引用、规范错误、接口标识与归属、路由覆盖、独立分发及只读行为；使用临时文件，只依赖 Node.js。 |
+| `npm run test:hooks`                  | 使用临时 Git 仓库，验证已暂存代码与 YAML 的格式化、只读契约检查、失败阻止提交及未暂存内容保护；依赖 Node.js 和 Git。         |
+| `npm run api:format:check`            | 检查手写契约 YAML 的格式。                                                                                                   |
+| `npm run api:lint`                    | 只读校验 OpenAPI 结构、引用、operation 标识与归属、路径参数和鉴权方案引用；只依赖 Node.js。                                  |
+| `npm run api:check`                   | 完成 lint 后，核对真实 Webman 路由覆盖与公开发布策略；需要 Composer 依赖和兼容 PHP，不执行 Controller 动作。                 |
+| `php tests/feedback_upload.php`       | 数据库使用替身，实际写入临时文件和上传目录。                                                                                 |
+| `php tests/registration_email.php`    | 真实 PostgreSQL / Redis，邮件使用替身。                                                                                      |
+| `php tests/installation.php`          | 真实 PostgreSQL / Redis，需创建、删除临时数据库的权限。                                                                      |
+| `php tests/sso_flow.php`              | 真实 PostgreSQL / Redis，使用临时 schema 和 Redis 前缀。                                                                     |
+| `node tests/installation_browser.mjs` | 初始化向导交互，API 使用 mock。                                                                                              |
+| `node tests/sso_browser.mjs`          | SSO 浏览器流程，连接真实 PostgreSQL / Redis。                                                                                |
 
-PHP 脚本需安装 Composer 依赖，并使用兼容当前 lock 的解释器（当前依赖要求至少 PHP 8.4.1）；可用该解释器直接执行 Composer phar 或 `scripts/openapi.php`。数据库测试读取 `.env`，执行前核对目标和权限。浏览器脚本需准备独立的 `web/user-web/`（提供 Playwright）、`web/admin-web/` 的依赖及本机 Chrome / Chromium；`CHROME_BINARY` 可指定浏览器，SSO 脚本还支持 `PHP_BINARY`。
+PHP 脚本需安装 Composer 依赖，并使用兼容当前 lock 的解释器（当前依赖要求至少 PHP 8.4.1）；可用该解释器直接执行 Composer phar。根目录 Node.js 工具要求 22.22.1+，依赖通过 `npm ci` 安装；`api:check` 支持用 `PHP_BINARY` 指定 PHP 绝对路径。数据库测试读取 `.env`，执行前核对目标和权限。浏览器脚本需准备独立的 `web/user-web/`（提供 Playwright）、`web/admin-web/` 的依赖及本机 Chrome / Chromium；`CHROME_BINARY` 可指定浏览器，SSO 脚本还支持 `PHP_BINARY`。
 
-修改接口元数据或 schema 后，运行 `composer api:generate` 更新 `api/public/`、`api/internal/` 的入口与模块片段，以及 `api/generated/` 的完整单文件，再运行工具行为测试及 lint/check。修改布局或引用逻辑时，还需验证拆分版合并后的契约与完整文档等价，公开目录可独立解析，不依赖内部版。它们证明契约可生成、归属互斥、路由覆盖及产物一致性；不能代替成功、输入错误、鉴权等真实 HTTP 行为验证。新增或修改业务行为时按影响执行相关接口测试并单独报告。
+修改接口契约时直接编辑 `api/public/` 或 `api/internal/` 中的 YAML，运行格式检查、lint/check；修改校验工具或提交钩子时运行对应工具测试。引用逻辑变更需验证公开目录可独立解析，不依赖内部版。契约检查不改写源文件，不生成产物；它们证明规范有效、归属互斥、路由覆盖及发布策略一致，不能代替成功、输入错误、鉴权等真实 HTTP 行为验证。新增或修改业务行为时按影响执行相关接口测试并单独报告。
 
 ## GitHub CI
 
-`.github/workflows/ci.yml` 在面向 `master` 的 PR、`master` 推送和手动触发时运行。使用 PHP 8.4 安装锁定的 Composer 依赖，检查后端 PHP 语法，执行 `composer api:lint`、`composer api:check`，再以独立进程依次运行上表中的 5 个 PHP 测试。`ci-gate` 仅在这些步骤全部成功后通过。
+`.github/workflows/ci.yml` 在面向 `master` 的 PR、`master` 推送和手动触发时运行。使用 PHP 8.4 和 Node.js 22.22.1 安装锁定的根目录依赖，检查后端 PHP 语法及契约格式，执行 `npm run api:lint`、`npm run api:check`、两组 Node.js 工具测试，再以独立进程依次运行上表中的 4 个 PHP 测试。`ci-gate` 仅在这些步骤全部成功后通过。
 
-数据库测试连接本次 CI 创建的 PostgreSQL 18、Redis 7.4 临时服务。PostgreSQL 测试账号具有创建和删除临时数据库的权限，测试沿用独立 schema、数据库和 Redis 前缀的隔离与清理规则。CI 不安装前端依赖，不构建或测试 `web/admin-web/`，不运行浏览器测试。
+数据库测试连接本次 CI 创建的 PostgreSQL 18、Redis 7.4 临时服务。PostgreSQL 测试账号具有创建和删除临时数据库的权限，测试沿用独立 schema、数据库和 Redis 前缀的隔离与清理规则。Node.js 依赖仅用于根目录契约、格式和钩子检查；CI 不安装前端应用依赖，不构建或测试 `web/admin-web/`，不运行浏览器测试。
 
 ## 用例与数据
 

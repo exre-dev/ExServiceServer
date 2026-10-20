@@ -43,8 +43,7 @@
     description: '免登录。必须携带 X-Setup-Request: 1；如提供 Origin，其主机与端口必须等于请求 Host（否则 403）。已安装、本机安装锁竞争、数据库 advisory lock 竞争、已有 app_ 表但未 force 均返回 409。环境不就绪、输入不合法、Redis 读写失败、数据库连接或建表失败返回 400。force=true 必须同时给出 force_confirmation=重置数据库，在事务内重建 public 下 app_ 业务表；外部依赖保护仍生效。创建首个 superadmin，写入数据库/Redis 配置及随机 JWT 密钥，保留其他环境项，不回传密码。'
     operationId: systemInstallationInstall
     parameters:
-      -
-        description: '固定值 1；初始化页面专用请求头'
+      - description: '固定值 1；初始化页面专用请求头'
         in: header
         name: X-Setup-Request
         required: true
@@ -52,8 +51,7 @@
           enum:
             - '1'
           type: string
-      -
-        description: '可选；存在时主机和端口必须与 Host 相同'
+      - description: '可选；存在时主机和端口必须与 Host 相同'
         in: header
         name: Origin
         required: false

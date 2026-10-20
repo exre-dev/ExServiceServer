@@ -2,8 +2,6 @@
 
 namespace app\server;
 
-use OpenApi\Attributes as OA;
-
 use app\common\exception\ApiException;
 use app\common\middleware\ServerMember;
 use app\common\model\PluginBindingModel;
@@ -23,63 +21,6 @@ class BindingController
   /**
    * 绑定码列表 + 可选在线插件
    */
-  #[OA\Get(
-    path: '/api/server/{sid}/bindings',
-    operationId: 'serverBindingList',
-    summary: '绑定码与在线插件选项',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。绑定码按 ID 倒序；完整序列化包含 code、server_key_hash、features 和心跳字段。plugin 仅选取 id/slug/name/status；plugin_options 仅含 online 插件并按名称排序。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerBindingsData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function index(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -103,75 +44,6 @@ class BindingController
   /**
    * 生成绑定码（插件须在线; 空间须 active; 一插件一码）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/bindings',
-    operationId: 'serverBindingCreate',
-    summary: '生成插件绑定码',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。空间须 active，插件须 online，一空间一插件仅一个绑定码；重复时须重置。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    requestBody: new OA\RequestBody(
-      required: true,
-      content: [
-        new OA\JsonContent(ref: '#/components/schemas/ServerPluginIdInput'),
-        new OA\MediaType(
-          mediaType: 'application/x-www-form-urlencoded',
-          schema: new OA\Schema(
-            ref: '#/components/schemas/ServerPluginIdInput',
-          ),
-        ),
-      ],
-    ),
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerBindingCodeData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function create(Request $request, int $sid): Response
   {
     ServerMember::assertManager($request);
@@ -219,70 +91,6 @@ class BindingController
   /**
    * 重置绑定码（旧码立即失效 + 解除服务器绑定 hash）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/bindings/{id}/reset',
-    operationId: 'serverBindingReset',
-    summary: '重置插件绑定码',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅当前空间绑定；旧码立即失效，清空 server_key_hash 并设 active，清理权限缓存。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'id',
-        in: 'path',
-        required: true,
-        description: '插件绑定码记录 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/ServerBindingCodeData',
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function reset(Request $request, int $sid, int $id): Response
   {
     ServerMember::assertManager($request);
@@ -314,72 +122,6 @@ class BindingController
   /**
    * 停用绑定码（空间自行停用, 可再启用）
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/bindings/{id}/disable',
-    operationId: 'serverBindingDisable',
-    summary: '停用插件绑定码',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅当前空间绑定，状态改为 disabled 并清理权限缓存；当前实现不额外检查空间或插件状态。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'id',
-        in: 'path',
-        required: true,
-        description: '插件绑定码记录 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function disable(Request $request, int $sid, int $id): Response
   {
     ServerMember::assertManager($request);
@@ -405,72 +147,6 @@ class BindingController
   /**
    * 重新启用
    */
-  #[OA\Post(
-    path: '/api/server/{sid}/bindings/{id}/enable',
-    operationId: 'serverBindingEnable',
-    summary: '启用插件绑定码',
-    description: '需要当前空间 active 成员身份及 owner/admin 权限；空间角色/归属/业务检查失败按当前实现返回 400。仅当前空间绑定，状态改为 active 并清理权限缓存；当前实现不额外检查空间或插件状态。',
-    tags: ['空间管理'],
-    security: [['sessionAuth' => []]],
-    parameters: [
-      new OA\Parameter(
-        name: 'sid',
-        in: 'path',
-        required: true,
-        description: '空间 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-      new OA\Parameter(
-        name: 'id',
-        in: 'path',
-        required: true,
-        description: '插件绑定码记录 ID',
-        schema: new OA\Schema(type: 'integer'),
-      ),
-    ],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          required: ['msg', 'data'],
-          properties: [
-            new OA\Property(property: 'msg', type: 'string'),
-            new OA\Property(
-              property: 'data',
-              type: 'array',
-              maxItems: 0,
-              items: new OA\Items(type: 'string'),
-            ),
-          ],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        description: '登录态缺失、无效、过期、撤销或用户不存在',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 403,
-        description: '平台封禁或 IP 错误请求限流',
-        content: new OA\JsonContent(
-          ref: '#/components/schemas/BusinessErrorBody',
-        ),
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-    x: ['audience' => 'internal'],
-  )]
   public function enable(Request $request, int $sid, int $id): Response
   {
     ServerMember::assertManager($request);

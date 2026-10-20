@@ -3,19 +3,9 @@
 // 独立 CLI：不加载 support/bootstrap.php、.env 或任何业务启动配置。
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-use app\common\openapi\Generator;
 use Webman\Route;
 
 try {
-  $mode = $argv[1] ?? '';
-  if (
-    count($argv) !== 2 ||
-    !in_array($mode, ['generate', 'lint', 'check'], true)
-  ) {
-    throw new RuntimeException(
-      '用法: php scripts/openapi.php generate|lint|check',
-    );
-  }
   $config = require dirname(__DIR__) . '/config/openapi.php';
   // 只装载 app.php，供框架判断 Controller 后缀和插件启用状态。
   // 不装载数据库、Redis、进程、安装或自动加载配置。
@@ -49,12 +39,30 @@ try {
   if (!Route::isDefaultRouteDisabled()) {
     throw new RuntimeException('默认业务路由必须关闭，才能完整核对显式契约');
   }
-  (new Generator($config))->execute(
-    $mode,
-    Route::getRoutes(),
-    $config['output'],
+  $routes = [];
+  foreach (Route::getRoutes() as $route) {
+    foreach ($route->getMethods() as $method) {
+      // CORS 通配预检不属于业务接口；fallback 不在 getRoutes() 中。
+      if (
+        $method === 'OPTIONS' &&
+        $route->getPath() === '[{path:.+}]' &&
+        $route->getCallback() instanceof \Closure
+      ) {
+        continue;
+      }
+      $routes[] = strtoupper($method) . ' ' . $route->getPath();
+    }
+  }
+  fwrite(
+    STDOUT,
+    json_encode(
+      [
+        'routes' => $routes,
+        'publicOperations' => $config['public_operations'],
+      ],
+      JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
+    ),
   );
-  fwrite(STDOUT, 'OpenAPI ' . $mode . " 通过\n");
 } catch (Throwable $exception) {
   fwrite(
     STDERR,

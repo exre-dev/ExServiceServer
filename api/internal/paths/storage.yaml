@@ -3,8 +3,7 @@
     description: '公开读取（octet-stream + attachment, 禁嗅探）'
     operationId: storageReadFile
     parameters:
-      -
-        in: query
+      - in: query
         name: key
         required: true
         schema:
@@ -71,8 +70,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 上传本地文件
     tags:
       - 存储
@@ -91,8 +89,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 'COS 上传确认（未启用）'
     tags:
       - 存储
@@ -128,8 +125,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/BusinessError'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 本地文件上传计划
     tags:
       - 存储

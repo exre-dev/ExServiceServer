@@ -2,8 +2,6 @@
 
 namespace app\admin;
 
-use OpenApi\Attributes as OA;
-
 use app\common\model\AuditLogModel;
 use app\common\model\PluginBindingModel;
 use app\common\model\PluginModel;
@@ -21,52 +19,6 @@ class DashboardController
   /** 心跳异常阈值秒数 */
   private const STALE_SECONDS = 1800;
 
-  #[OA\Get(
-    path: '/api/admin/dashboard',
-    operationId: 'adminDashboardIndex',
-    summary: '平台概览',
-    description: '需要有效登录会话及平台角色 superadmin 或 ops。平台角色不足按当前实现返回400；登录态失效401，封禁或全局限流403。',
-    tags: ['平台管理端'],
-    security: [['sessionAuth' => []]],
-    x: ['audience' => 'internal'],
-    responses: [
-      new OA\Response(
-        response: 200,
-        description: '操作成功',
-        content: new OA\JsonContent(
-          type: 'object',
-          properties: [
-            new OA\Property(
-              property: 'msg',
-              type: 'string',
-              description: '成功消息',
-            ),
-            new OA\Property(
-              property: 'data',
-              ref: '#/components/schemas/AdminDashboard',
-            ),
-          ],
-          required: ['msg', 'data'],
-        ),
-      ),
-      new OA\Response(
-        response: 400,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 401,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 403,
-        ref: '#/components/responses/BusinessError',
-      ),
-      new OA\Response(
-        response: 503,
-        ref: '#/components/responses/SetupRequired',
-      ),
-    ],
-  )]
   public function index(Request $request): Response
   {
     $now = time();

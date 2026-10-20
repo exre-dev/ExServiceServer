@@ -2,7 +2,4 @@ set -e
 
 node scripts/pre-commit.mjs check
 lint-staged --config .lintstagedrc.json
-composer api:generate
-composer api:lint
-composer api:check
-node scripts/pre-commit.mjs stage
+npm run api:check

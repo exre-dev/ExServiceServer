@@ -15,8 +15,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 获取通知偏好
     tags:
       - 通知
@@ -48,8 +47,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 整体替换可选类别偏好
     tags:
       - 通知
@@ -59,8 +57,7 @@
     description: '通知列表（keyset 分页, view=unread|history）'
     operationId: notificationList
     parameters:
-      -
-        in: query
+      - in: query
         name: view
         required: true
         schema:
@@ -68,8 +65,7 @@
             - unread
             - history
           type: string
-      -
-        in: query
+      - in: query
         name: scope
         required: false
         schema:
@@ -79,8 +75,7 @@
             - community
             - personal
           type: string
-      -
-        in: query
+      - in: query
         name: category
         required: false
         schema:
@@ -89,16 +84,14 @@
             - personal_update
             - service_notice
           type: string
-      -
-        in: query
+      - in: query
         name: limit
         required: false
         schema:
           default: 20
           description: '取值 1 至 50；越界时回退到 20'
           type: integer
-      -
-        in: query
+      - in: query
         name: cursor
         required: false
         schema:
@@ -119,8 +112,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 通知列表与签名游标分页
     tags:
       - 通知
@@ -154,8 +146,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 按快照清理通知
     tags:
       - 通知
@@ -178,8 +169,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 生成十分钟清理快照
     tags:
       - 通知
@@ -213,8 +203,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 按令牌上界全部已读
     tags:
       - 通知
@@ -237,8 +226,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 未读摘要
     tags:
       - 通知
@@ -248,8 +236,7 @@
     description: 通知详情（读详情不改变已读状态）
     operationId: notificationDetail
     parameters:
-      -
-        in: path
+      - in: path
         name: notificationId
         required: true
         schema:
@@ -270,8 +257,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 通知详情（不自动已读）
     tags:
       - 通知
@@ -281,8 +267,7 @@
     description: '单条已读/未读（乐观锁 409）'
     operationId: notificationSetState
     parameters:
-      -
-        in: path
+      - in: path
         name: notificationId
         required: true
         schema:
@@ -313,8 +298,7 @@
       '503':
         $ref: '../openapi.yaml#/components/responses/SetupRequired'
     security:
-      -
-        sessionAuth: []
+      - sessionAuth: []
     summary: 更新已读状态与修订号
     tags:
       - 通知
