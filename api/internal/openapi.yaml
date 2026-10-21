@@ -396,7 +396,7 @@ components:
       $ref: './schemas/system.yaml#/SystemInstallationStatusData'
   securitySchemes:
     sessionAuth:
-      description: '会话 JWT，保留会话撤销和用户状态校验。'
+      description: '本站登录会话 JWT，保留会话撤销和用户状态校验；绑定应用的 OAuth 访问令牌不可用于本站会话接口，返回 401。'
       scheme: bearer
       type: http
 info:

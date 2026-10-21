@@ -73,11 +73,11 @@ components:
       name: X-Bind-Code
       type: apiKey
     oauthBearer:
-      description: 'OAuth 访问令牌。'
+      description: 'OAuth 访问令牌，仅用于对应 scope 的开放资源接口，不可作为本站登录凭据。'
       scheme: bearer
       type: http
     sessionAuth:
-      description: '会话 JWT，保留会话撤销和用户状态校验。'
+      description: '本站登录会话 JWT，保留会话撤销和用户状态校验；绑定应用的 OAuth 访问令牌不可用于本站会话接口，返回 401。'
       scheme: bearer
       type: http
 info:

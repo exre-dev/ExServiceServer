@@ -54,6 +54,12 @@ class CheckLogin implements MiddlewareInterface
         throw new ApiException("登录状态已失效,请重新登录", 401);
       }
 
+      // OAuth 会话始终绑定应用，不能作为本站登录凭据绕过 scope 或借用平台角色。
+      // 使用服务端会话快照中的 client_id，与 OAuthTokenAuth 的凭据用途边界一致。
+      if ((string) ($session['client_id'] ?? '') !== '') {
+        throw new ApiException("请使用本站登录凭证", 401);
+      }
+
       // 用户实时状态（封禁即时拦截）
       $user = UserModel::find($uid);
       if (!$user) {

@@ -55,6 +55,16 @@ jobs:
       REDIS_DATABASE: '0'
       REDIS_PASSWORD: ''
       BOT_ENABLE: 'false'
+      WEBSITE_HTTP_TEST_ENABLED: '1'
+      WEBSITE_HTTP_TEST_PG_HOST: 127.0.0.1
+      WEBSITE_HTTP_TEST_PG_PORT: '5432'
+      WEBSITE_HTTP_TEST_PG_DB: website_http_test_ci
+      WEBSITE_HTTP_TEST_PG_USER: postgres
+      WEBSITE_HTTP_TEST_PG_PASSWORD: php-ci-password
+      WEBSITE_HTTP_TEST_REDIS_HOST: 127.0.0.1
+      WEBSITE_HTTP_TEST_REDIS_PORT: '6379'
+      WEBSITE_HTTP_TEST_REDIS_DATABASE: '0'
+      WEBSITE_HTTP_TEST_REDIS_PASSWORD: '__EMPTY__'
 
     steps:
       - name: Check out repository
@@ -108,6 +118,11 @@ jobs:
 
       - name: Test SSO
         run: php tests/sso_flow.php
+
+      - name: Test Website HTTP and OAuth credential boundary
+        run: |
+          PGPASSWORD="$PG_PASSWORD" psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 -c 'CREATE DATABASE website_http_test_ci'
+          php tests/website_http.php
 
   ci-gate:
     name: ci-gate
