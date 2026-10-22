@@ -2,7 +2,7 @@
 
 更新时间：2026-10-19。
 
-本文说明当前 Webman 后端与 `web/user-web` 使用的设备码 SSO。流程为：应用发起请求，用户在网页确认身份，应用轮询领取访问令牌，再获取用户资料。
+本文说明当前 Webman 后端与父工程 ExWebsite 用户网站使用的设备码 SSO。流程为：应用发起请求，用户在网页确认身份，应用轮询领取访问令牌，再获取用户资料。
 
 本文中的应用指接入的插件及其服务端；该流程与用户站点 `/identity/*` 下的 Hydra 身份流程分别实现。
 
@@ -359,5 +359,3 @@ Authorization: Bearer <access_token>
 - `app/common/middleware/OAuthTokenAuth.php`：开放接口的访问令牌校验。
 - `app/open/OAuthUserController.php`：按权限返回用户资料。
 - `app/admin/SsoController.php`：管理端请求列表与撤销。
-- `web/user-web/apps/web/src/auth/AuthFlow.tsx`：用户网页登录流程。
-- `web/user-web/apps/web/src/pages/AuthPage/SsoSuccess.tsx`：成功页与关闭提示。

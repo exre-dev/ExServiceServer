@@ -2,14 +2,9 @@
 
 > 更新：2026-10-17（P4 完成后）。本文档与本地测试库实际状态一致；执行 `database/schema.sql + seed.sql` 重建后回到初始状态（仅剩前两个账号 + 无业务数据）。
 
-## 1. 环境启动（三件套）
+## 1. 环境启动
 
-```bash
-docker start webman-pgsql          # PostgreSQL 16, 127.0.0.1:5432
-cd F:\CAEP-Ending\webman && php windows.php     # 后端, http://127.0.0.1:8787
-cd F:\CAEP-Ending\webman\web\admin-web && npm run dev   # 管理端, http://127.0.0.1:5173
-# 用户侧 UI（独立项目）: cd web\user-web && pnpm dev → http://127.0.0.1:8080
-```
+后端启动与依赖准备见 `docs/local-development.md`。用户网站和管理端由父工程 ExWebsite 维护，启动方式见父工程 README。
 
 Redis 要求本机 6379（Windows 服务）。`config/app.php` 的 `debug=true` 时本机请求不受 IP 限流。
 
@@ -21,7 +16,7 @@ Redis 要求本机 6379（Windows 服务）。`config/app.php` 的 `debug=true` 
 | `test@example.com` | `123456` | 普通用户，**demo-server 的 Owner** | 空间管理端全部功能 |
 | `p0-test@example.com` | `abc123` | 普通用户，demo-server 的 **member** | 验证成员角色无管理权限、被权限矩阵限制功能 |
 
-登录入口：管理端 http://127.0.0.1:5173/login ；不同账号登录看到不同菜单（平台角色看平台菜单，空间 Owner 直接进空间控制台）。
+登录入口使用父工程管理端实际监听地址下的 `/login`；不同账号登录看到不同菜单（平台角色看平台菜单，空间 Owner 直接进空间控制台）。
 
 ## 3. 当前测试数据状态
 

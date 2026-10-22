@@ -8,7 +8,7 @@
 | 项 | 约定 |
 |---|---|
 | Base URL | 生产 `https://<平台域名>/api`；本地联调 `http://127.0.0.1:8787/api` |
-| 用户侧 UI | 本仓库 `web/user-web`（ExWebsite，独立运行，见其 README；对接本文档接口） |
+| 用户侧 UI | 父工程 ExWebsite 维护的独立用户网站，启动方式见父工程 README。 |
 | 请求格式 | `Content-Type: application/json`，UTF-8 |
 | 响应包络 | **成功** HTTP 200，`{"msg": "ok 或文案", "data": {...}}`；**失败** HTTP 4xx，`{"msg": "中文错误信息"}`（无 data 字段） |
 | 认证方式 | 请求头 `Authorization: Bearer <token>`；token 即登录/注册返回的 `token` 字段 |
