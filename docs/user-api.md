@@ -11,7 +11,7 @@
 | 用户侧 UI | 父工程 ExWebsite 维护的独立用户网站，启动方式见父工程 README。 |
 | 请求格式 | `Content-Type: application/json`，UTF-8 |
 | 响应包络 | **成功** HTTP 200，`{"msg": "ok 或文案", "data": {...}}`；**失败** HTTP 4xx，`{"msg": "中文错误信息"}`（无 data 字段） |
-| 认证方式 | 请求头 `Authorization: Bearer <token>`；token 即登录/注册返回的 `token` 字段 |
+| 认证方式 | 请求头 `Authorization: Bearer <token>`；token 即登录/注册返回的本站 `token` 字段。OAuth 访问令牌仅用于 OAuth 资源接口，不能用于本站账号或管理接口（401） |
 | token 有效期 | 返回值 `expires_in` 秒（当前 36000 = 10 小时）；**无 refresh token**，过期重新登录 |
 | 多设备 | 每次登录生成独立会话，多设备并存；服务端可撤销任一设备 |
 | **401** | 登录态失效（过期/被撤销/被封禁下线）→ **清除本地 token 并跳转登录页**，`msg` 可直接展示 |
