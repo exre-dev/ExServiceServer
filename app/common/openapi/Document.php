@@ -14,7 +14,7 @@ use OpenApi\Attributes as OA;
   securityScheme: 'sessionAuth',
   type: 'http',
   scheme: 'bearer',
-  description: '会话 JWT，保留会话撤销和用户状态校验。',
+  description: '本站登录会话 JWT，保留会话撤销和用户状态校验；需要登录的接口拒绝携带 client_id 的 OAuth 访问令牌，返回 401；可选鉴权接口按匿名处理。',
 )]
 #[OA\SecurityScheme(
   securityScheme: 'oauthBearer',

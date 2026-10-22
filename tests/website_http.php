@@ -566,15 +566,16 @@ namespace {
     verify(!file_exists($root) && mkdir($root, 0755), '无法创建独占测试目录');
     $rootCreated = true;
     define('BASE_PATH', $root);
+    require $source . '/vendor/autoload.php';
     foreach ($environment as $key => $value) {
       putenv($key . '=' . $value);
     }
     putenv('JWT_ACCESS_SECRET=' . bin2hex(random_bytes(32)));
     putenv('JWT_REFRESH_SECRET=' . bin2hex(random_bytes(32)));
     putenv('USER_WEB_URL');
+    $userWebConfiguration = require $source . '/config/userweb.php';
     verify(
-      require $source . '/config/userweb.php'['base_url'] ===
-        'http://127.0.0.1:8080',
+      $userWebConfiguration['base_url'] === 'http://127.0.0.1:8080',
       '默认 Website 公开地址应为 8080',
     );
     putenv('USER_WEB_URL=http://127.0.0.1:8080');
@@ -624,7 +625,6 @@ namespace {
         var_export($prefix, true) .
         ";\nreturn \$config;\n",
     );
-    require $source . '/vendor/autoload.php';
     require $source . '/support/bootstrap.php';
     InstallationService::refreshConfiguration(true);
     verify(
@@ -661,6 +661,11 @@ namespace {
       [
         'app_users',
         'app_server_accounts',
+        'app_server_members',
+        'app_doc_categories',
+        'app_docs',
+        'app_tags',
+        'app_user_tags',
         'app_oauth_clients',
         'app_oauth_grants',
         'app_auth_sessions',
@@ -1572,6 +1577,218 @@ namespace {
     );
     $http->json('GET', '/oauth/device', [], 401, null, 'public');
     echo "PASS SSO: real device-init setup, inspect/password/session confirm, 401/409/422; device top navigation remains 401\n";
+
+    // 从真实设备码流和授权码流取令牌，不能用手造 JWT/会话替代凭据用途回归。
+    $deviceToken = $http->json(
+      'POST',
+      '/api/oauth/device/token',
+      $deviceCredentials + ['device_code' => $device->device_code],
+      200,
+      null,
+      'public',
+    );
+    verify($deviceToken->scope === 'user.basic', '设备令牌 scope 错误');
+    $oauthCases = [[$users['member'], $deviceToken, false]];
+    $redirectUri = 'https://website-http.invalid/callback';
+    $codeClientId = 'website-http-code-' . bin2hex(random_bytes(8));
+    Db::table('app_oauth_clients')->insert([
+      'client_id' => $codeClientId,
+      'name' => 'Website authorization code fixture',
+      'type' => 'third_party',
+      'client_secret_hash' => hash('sha256', $clientSecret),
+      'redirect_uris' => json_encode([$redirectUri]),
+      'scopes' => '["user.basic","user.email"]',
+    ]);
+    foreach (['public', 'login', 'members'] as $visibility) {
+      Db::table('app_docs')->insert([
+        'slug' => 'oauth-boundary-' . $visibility,
+        'title' => 'OAuth boundary ' . $visibility,
+        'content_md' => 'Document ' . $visibility,
+        'visibility' => $visibility,
+        'status' => 'published',
+      ]);
+    }
+    verify(
+      count($http->json('GET', '/api/docs')->list) === 1,
+      '匿名文档列表不应包含受限文档',
+    );
+    foreach (['member', 'ops', 'superadmin'] as $role) {
+      if ($role === 'member') {
+        $websiteToken = $token;
+      } else {
+        $users[$role] = (int) Db::table('app_users')->insertGetId([
+          'email' => $role . '@website-http.invalid',
+          'username' => $role,
+          'password_hash' => password_hash($password, PASSWORD_BCRYPT),
+          'platform_role' => $role,
+        ]);
+        $websiteToken = $http->json('POST', '/api/auth/login', [
+          'email' => $role . '@website-http.invalid',
+          'password' => $password,
+        ])->token;
+        // 同一个平台用户的本站凭据可以通过真实 PlatformAdmin 中间件。
+        $http->json('GET', '/api/admin/sso-requests', [], 200, $websiteToken);
+      }
+      verify(
+        count($http->json('GET', '/api/docs', [], 200, $websiteToken)->list) ===
+          ($role === 'member' ? 2 : 3) &&
+          $http->json(
+            'GET',
+            '/api/docs/oauth-boundary-login',
+            [],
+            200,
+            $websiteToken,
+          )->content_md === 'Document login',
+        '本站凭据未保留文档身份与平台权限',
+      );
+      foreach (['user.basic', 'user.basic user.email'] as $scope) {
+        $authorization = $http->json(
+          'POST',
+          '/api/oauth/authorize/confirm',
+          [
+            'client_id' => $codeClientId,
+            'redirect_uri' => $redirectUri,
+            'state' => bin2hex(random_bytes(8)),
+            'scope' => $scope,
+          ],
+          200,
+          $websiteToken,
+        );
+        parse_str(parse_url($authorization->redirect, PHP_URL_QUERY), $query);
+        $access = $http->json(
+          'POST',
+          '/api/oauth/token',
+          [
+            'code' => $query['code'],
+            'client_id' => $codeClientId,
+            'client_secret' => $clientSecret,
+            'redirect_uri' => $redirectUri,
+          ],
+          200,
+          null,
+          'public',
+        );
+        verify($access->scope === $scope, '授权码令牌 scope 错误');
+        $oauthCases[] = [
+          $users[$role],
+          $access,
+          str_contains($scope, 'user.email'),
+        ];
+      }
+    }
+    foreach ($oauthCases as [$userId, $access, $hasEmail]) {
+      $sessionId = (int) Db::table('app_auth_sessions')
+        ->where('user_id', $userId)
+        ->where(
+          'client_id',
+          $access === $deviceToken ? $clientId : $codeClientId,
+        )
+        ->where('scope', $access->scope)
+        ->value('id');
+      verify($sessionId > 0, '真实 OAuth 会话未持久化');
+      $before = Db::table('app_users')->where('id', $userId)->first();
+      foreach (['cached', 'database'] as $sourcePath) {
+        foreach (
+          [
+            ['GET', '/api/auth/me', []],
+            ['GET', '/api/account/me', []],
+            ['GET', '/api/admin/sso-requests', []],
+            ['PATCH', '/api/auth/me', ['nickname' => 'OAuth 越权修改']],
+          ]
+          as [$method, $uri, $body]
+        ) {
+          if ($sourcePath === 'database') {
+            Redis::del('sess:' . $sessionId);
+          }
+          [$denied] = $http->send(
+            $method,
+            $uri,
+            $body,
+            401,
+            $access->access_token,
+          );
+          verify(
+            !property_exists($denied, 'data') &&
+              !str_contains(json_encode($denied), $before->email),
+            'OAuth 凭据拒绝响应泄露账号或管理数据',
+          );
+        }
+        verify(
+          Db::table('app_users')->where('id', $userId)->first() == $before,
+          '被拒绝的 OAuth 请求产生账号修改',
+        );
+        // 分别让 userinfo 自身触发回源及读取重建后的缓存，确保 scope 不丢失。
+        if ($sourcePath === 'database') {
+          Redis::del('sess:' . $sessionId);
+        }
+        for ($read = 0; $read < 2; $read++) {
+          $info = $http->json(
+            'GET',
+            '/api/open/userinfo',
+            [],
+            200,
+            $access->access_token,
+            'public',
+          );
+          verify(
+            $info->id === $userId &&
+              $info->username === $before->username &&
+              property_exists($info, 'email') === $hasEmail &&
+              (!$hasEmail || $info->email === $before->email),
+            'OAuth userinfo 未按会话 scope 返回字段（' . $sourcePath . '）',
+          );
+        }
+        if ($sourcePath === 'database') {
+          Redis::del('sess:' . $sessionId);
+        }
+        $documents = $http->json(
+          'GET',
+          '/api/docs',
+          [],
+          200,
+          $access->access_token,
+        )->list;
+        verify(
+          count($documents) === 1 &&
+            $documents[0]->slug === 'oauth-boundary-public',
+          '可选鉴权不能把 OAuth 凭据识别为本站用户或平台管理员',
+        );
+        foreach (['login', 'members'] as $visibility) {
+          if ($sourcePath === 'database') {
+            Redis::del('sess:' . $sessionId);
+          }
+          $http->json(
+            'GET',
+            '/api/docs/oauth-boundary-' . $visibility,
+            [],
+            400,
+            $access->access_token,
+          );
+        }
+      }
+    }
+    $http->json('GET', '/api/open/userinfo', [], 401, $token, 'public');
+    // 本站会话回源后仍保留账号读写能力。
+    Redis::del(
+      'sess:' .
+        Db::table('app_auth_sessions')
+          ->where('user_id', $users['member'])
+          ->whereNull('client_id')
+          ->value('id'),
+    );
+    verify(
+      $http->json(
+        'PATCH',
+        '/api/auth/me',
+        ['nickname' => '本站会话正常'],
+        200,
+        $token,
+      )->username === '本站会话正常' &&
+        $http->json('GET', '/api/auth/me', [], 200, $token)->email ===
+          $credentials['email'],
+      '本站会话读写回归',
+    );
+    echo "PASS OAuth boundary: real device/code token exchange, member/ops/superadmin, cached/database sessions, account/admin 401 without mutation, scope-filtered userinfo, optional docs anonymous, website read/write\n";
 
     $http->json('POST', '/api/auth/logout', [], 200, $token);
     $http->json('GET', '/api/auth/me', [], 401, $token);

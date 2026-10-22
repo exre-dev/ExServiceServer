@@ -33,7 +33,7 @@ class DocViewController
     path: '/api/docs',
     operationId: 'contentDocumentList',
     summary: '可浏览文档列表',
-    description: '免登录，可选 sessionAuth Bearer；只有 JWT 和会话均有效且用户匹配才识别身份，无效令牌按匿名处理。public 任何人可见；ops/superadmin 可查看全部已发布文档；login 需有效登录，servers 需指定空间 active 成员，tags 需标签交集；空间 members 需 active 成员，roles 对 owner/admin 恒可见、普通成员需匹配 visible_roles。只选已发布文档，先按 ID 倒序取前 100 条再进行可见性过滤，因此结果可能少于 100；不返回正文。',
+    description: '免登录，可选 sessionAuth Bearer；只有 JWT 和本站会话均有效且用户匹配才识别身份，OAuth 访问令牌及无效令牌按匿名处理。public 任何人可见；ops/superadmin 可查看全部已发布文档；login 需有效登录，servers 需指定空间 active 成员，tags 需标签交集；空间 members 需 active 成员，roles 对 owner/admin 恒可见、普通成员需匹配 visible_roles。只选已发布文档，先按 ID 倒序取前 100 条再进行可见性过滤，因此结果可能少于 100；不返回正文。',
     tags: ['文档浏览'],
     security: [[], ['sessionAuth' => []]],
     parameters: [
@@ -138,7 +138,7 @@ class DocViewController
     path: '/api/docs/{slug}',
     operationId: 'contentDocumentDetail',
     summary: '浏览文档正文',
-    description: '免登录，可选 sessionAuth Bearer；只有 JWT 和会话均有效且用户匹配才识别身份，无效令牌按匿名处理。public 任何人可见；ops/superadmin 可查看全部已发布文档；login 需有效登录，servers 需指定空间 active 成员，tags 需标签交集；空间 members 需 active 成员，roles 对 owner/admin 恒可见、普通成员需匹配 visible_roles。查不到或不可见均按当前实现返回 400“文档不存在”，以相同响应避免泄露存在性；成功返回完整模型。',
+    description: '免登录，可选 sessionAuth Bearer；只有 JWT 和本站会话均有效且用户匹配才识别身份，OAuth 访问令牌及无效令牌按匿名处理。public 任何人可见；ops/superadmin 可查看全部已发布文档；login 需有效登录，servers 需指定空间 active 成员，tags 需标签交集；空间 members 需 active 成员，roles 对 owner/admin 恒可见、普通成员需匹配 visible_roles。查不到或不可见均按当前实现返回 400“文档不存在”，以相同响应避免泄露存在性；成功返回完整模型。',
     tags: ['文档浏览'],
     security: [[], ['sessionAuth' => []]],
     parameters: [
@@ -221,7 +221,12 @@ class DocViewController
           $tUid = (int) ($v['extend']['id'] ?? 0);
           $tSid = (int) ($v['extend']['sid'] ?? 0);
           $sess = \app\common\services\SessionService::check($tSid);
-          if ($tUid > 0 && $sess && (int) $sess['user_id'] === $tUid) {
+          if (
+            $tUid > 0 &&
+            $sess &&
+            (int) $sess['user_id'] === $tUid &&
+            empty($sess['client_id'])
+          ) {
             $uid = $tUid;
           }
         } catch (\Throwable $e) {

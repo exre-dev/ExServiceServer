@@ -56,7 +56,7 @@ PHP 脚本需安装 Composer 依赖，并使用兼容当前 lock 的解释器（
 
 随机 schema、Redis prefix 和 JWT 密钥在首次配置刷新前设置，临时配置包装器保证新连接与后续加载都保留隔离；文件、头像、multipart 和日志写入临时根目录。只从版本化 SQL 提取所需建表与索引定义，不执行整份含 DROP 的 schema 或 seed。`finally` 校验资源名称和路径后分别清理，并核验 schema、Redis namespace 和临时目录已消失；测试运行器负责回收其创建的临时服务和数据库。
 
-覆盖账号登录/退出、资料/头像、邀请注册、通知/偏好、file 上传/下载、反馈收取/附件/完成以及 SSO inspect/login/confirm，检查实际状态、副作用和 401/403/409/413/422 等分支。SSO 通过真实 public device-init 建立请求，保留未登录 `/oauth/device` 的既有 401，不扩展 public token/userinfo 业务。
+覆盖账号登录/退出、资料/头像、邀请注册、通知/偏好、file 上传/下载、反馈收取/附件/完成以及 SSO inspect/login/confirm，检查实际状态、副作用和 401/403/409/413/422 等分支。SSO 通过真实 public device-init 建立请求，保留未登录 `/oauth/device` 的既有 401。OAuth 用真实设备码与授权码交换令牌，覆盖普通用户、ops、superadmin 和缓存命中/数据库回源：本站账号及管理接口返回 401、账号不被修改，userinfo 保留按 scope 输出邮箱的能力；文档可选鉴权将 OAuth 凭据视为匿名。本测试不替代 OAuth 浏览器跳转或网络 socket 验收。
 
 响应结构直接读取 `api/generated/openapi.internal.yaml`，public SSO setup 单独读取 `api/generated/openapi.public.yaml`，按真实 operation、状态和媒体类型选择 schema。限定校验覆盖对象/数组、必填字段、额外属性、引用、nullable、oneOf、类型/枚举及长度/数量/数值约束，未知语义明确失败；format、示例和描述仅作为注释。负向用例证明错误响应会被拒绝。二进制响应另验字节和相关头。此测试不校验完整 OpenAPI 请求语义，也不代表 socket、常驻 worker、代理、浏览器、SMTP 或部署验收。
 

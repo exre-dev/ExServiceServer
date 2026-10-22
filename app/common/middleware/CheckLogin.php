@@ -27,40 +27,45 @@ class CheckLogin implements MiddlewareInterface
     $properties = (new ReflectionClass($controller))->getDefaultProperties();
     $noNeedLogin = $properties['noNeedLogin'] ?? [];
 
-    $token = $request->header("Authorization");
+    $token = $request->header('Authorization');
 
     // 访问的方法需要登录
     if ($noNeedLogin !== '*' && !in_array($action, $noNeedLogin)) {
       if ($token === null || $token === '') {
-        throw new ApiException("请提供有效token", 401);
+        throw new ApiException('请提供有效token', 401);
       }
 
       // JWT 签名与有效期校验（无效/过期/格式异常统一转 401, 避免框架异常变成 500）
       try {
         $verify = \Tinywan\Jwt\JwtToken::verify();
       } catch (\Throwable $e) {
-        throw new ApiException("登录状态已失效,请重新登录", 401);
+        throw new ApiException('登录状态已失效,请重新登录', 401);
       }
       $extend = $verify['extend'] ?? [];
       $uid = (int) ($extend['id'] ?? 0);
       $sid = (int) ($extend['sid'] ?? 0);
       if ($uid <= 0 || $sid <= 0) {
-        throw new ApiException("登录凭证无效,请重新登录", 401);
+        throw new ApiException('登录凭证无效,请重新登录', 401);
       }
 
       // 会话必须 active（撤销 = 删 Redis, 立即生效）
       $session = SessionService::check($sid);
       if ($session === null || (int) $session['user_id'] !== $uid) {
-        throw new ApiException("登录状态已失效,请重新登录", 401);
+        throw new ApiException('登录状态已失效,请重新登录', 401);
+      }
+
+      // OAuth 会话只能用于 OAuthTokenAuth 保护的资源，不能继承本站账号或平台权限。
+      if (!empty($session['client_id'])) {
+        throw new ApiException('请使用本站登录凭证', 401);
       }
 
       // 用户实时状态（封禁即时拦截）
       $user = UserModel::find($uid);
       if (!$user) {
-        throw new ApiException("用户不存在", 401);
+        throw new ApiException('用户不存在', 401);
       }
       if ((int) $user->ban !== 0) {
-        throw new ApiException("用户被禁用", 403);
+        throw new ApiException('用户被禁用', 403);
       }
 
       $request->uid = $uid;

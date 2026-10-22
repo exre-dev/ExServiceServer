@@ -110,6 +110,7 @@ class SessionService
             'user_id' => (int) $session->user_id,
             'platform' => (string) $session->platform,
             'client_id' => $session->client_id,
+            'scope' => (string) $session->scope,
             'status' => 'active',
         ];
         $ttl = $session->expires_time ? max(1, strtotime((string) $session->expires_time) - time()) : 3600;
