@@ -108,8 +108,8 @@ class EnvironmentInstallation extends InstallationService
       ],
       '依赖探测必须使用 POSTGRES_* 应用配置',
     );
-    $database = require __DIR__ .
-      '/../config/database.php'['connections']['pgsql'];
+    $database = require __DIR__ . '/../config/database.php';
+    $database = $database['connections']['pgsql'];
     $check(
       $database['host'] === 'local-host' &&
         $database['port'] === '5544' &&

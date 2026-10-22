@@ -697,9 +697,9 @@ try {
       RuntimeConfiguration::current()->webUrl() === 'http://127.0.0.1:8083',
       '重载后 Web 地址覆盖失效',
     );
+    $userWeb = require __DIR__ . '/../config/userweb.php';
     check(
-      require __DIR__ . '/../config/userweb.php'['base_url'] ===
-        'http://127.0.0.1:8083',
+      $userWeb['base_url'] === 'http://127.0.0.1:8083',
       '配置消费者未使用开发覆盖',
     );
   } finally {

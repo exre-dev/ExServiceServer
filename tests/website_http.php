@@ -572,9 +572,9 @@ namespace {
     putenv('JWT_ACCESS_SECRET=' . bin2hex(random_bytes(32)));
     putenv('JWT_REFRESH_SECRET=' . bin2hex(random_bytes(32)));
     putenv('USER_WEB_URL');
+    $userWeb = require $source . '/config/userweb.php';
     verify(
-      require $source . '/config/userweb.php'['base_url'] ===
-        'http://127.0.0.1:8080',
+      $userWeb['base_url'] === 'http://127.0.0.1:8080',
       '默认 Website 公开地址应为 8080',
     );
     putenv('USER_WEB_URL=http://127.0.0.1:8080');
