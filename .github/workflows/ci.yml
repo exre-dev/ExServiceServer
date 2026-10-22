@@ -45,11 +45,11 @@ jobs:
 
     # 仅连接本次 CI 的临时服务；安装测试需要创建和删除临时数据库。
     env:
-      PG_HOST: 127.0.0.1
-      PG_PORT: '5432'
-      PG_DB: exservice_test
-      PG_USER: postgres
-      PG_PASSWORD: php-ci-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      POSTGRES_DB: exservice_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: php-ci-password
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: '6379'
       REDIS_DATABASE: '0'
@@ -66,7 +66,7 @@ jobs:
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.4'
-          extensions: pdo_pgsql, redis, gd, mbstring
+          extensions: pdo_pgsql, redis, gd, mbstring, pcntl, posix
           tools: composer:v2
           coverage: none
 
@@ -74,16 +74,19 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Check PHP syntax
-        run: git ls-files -z -- '*.php' ':!:web/**' | xargs -0 -r -n 1 php -l
+        run: git ls-files -z -- '*.php' | xargs -0 -r -n 1 php -l
 
       - name: Check OpenAPI definitions and generated artifacts
         run: |
           composer api:lint
           composer api:check
 
-      # 每个 PHP 测试使用独立进程；不运行 admin-web 或浏览器测试。
+      # 每个 PHP 测试使用独立进程。
       - name: Test OpenAPI generation
         run: php tests/openapi.php
+
+      - name: Test local runtime
+        run: php tests/runtime.php
 
       - name: Test feedback uploads
         run: php tests/feedback_upload.php
@@ -100,11 +103,11 @@ jobs:
       - name: Test Website HTTP pipeline
         env:
           WEBSITE_HTTP_TEST_ENABLED: '1'
-          WEBSITE_HTTP_TEST_PG_HOST: 127.0.0.1
-          WEBSITE_HTTP_TEST_PG_PORT: '5432'
-          WEBSITE_HTTP_TEST_PG_DB: website_http_test_ci
-          WEBSITE_HTTP_TEST_PG_USER: postgres
-          WEBSITE_HTTP_TEST_PG_PASSWORD: php-ci-password
+          WEBSITE_HTTP_TEST_POSTGRES_HOST: 127.0.0.1
+          WEBSITE_HTTP_TEST_POSTGRES_PORT: '5432'
+          WEBSITE_HTTP_TEST_POSTGRES_DB: website_http_test_ci
+          WEBSITE_HTTP_TEST_POSTGRES_USER: postgres
+          WEBSITE_HTTP_TEST_POSTGRES_PASSWORD: php-ci-password
           WEBSITE_HTTP_TEST_REDIS_HOST: 127.0.0.1
           WEBSITE_HTTP_TEST_REDIS_PORT: '6379'
           WEBSITE_HTTP_TEST_REDIS_DATABASE: '1'

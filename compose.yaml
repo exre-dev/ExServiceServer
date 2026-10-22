@@ -1,14 +1,37 @@
 name: exre-php-local
 
 services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: [php, scripts/container.php, serve]
+    init: true
+    environment:
+      EXWEBSITE_DOCKER: '1'
+      EXWEBSITE_DEV_LISTEN: '${EXWEBSITE_DEV_LISTEN:-http://127.0.0.1:8081}'
+      EXWEBSITE_DEV_WEB_URL: '${EXWEBSITE_DEV_WEB_URL:-http://127.0.0.1:8080}'
+      EXWEBSITE_DEV_RUN_ID: '${EXWEBSITE_DEV_RUN_ID:-manual}'
+    ports:
+      - '127.0.0.1:${EXWEBSITE_PHP_PORT:-8081}:8787'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - .:/app
+      - php_vendor:/app/vendor
+      - php_runtime:/app/runtime
+      - ./runtime/avatars:/app/runtime/avatars
+      - ./runtime/uploads:/app/runtime/uploads
+      - ./public/uploads:/app/public/uploads
+
   postgres:
     image: postgres:18
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
-      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:?请在 .env 中填写 PostgreSQL 管理密码}'
+      POSTGRES_PASSWORD: '${DOCKER_POSTGRES_ADMIN_PASSWORD:-}'
     ports:
-      - '127.0.0.1:${PG_PORT:-5432}:5432'
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
@@ -20,18 +43,33 @@ services:
 
   redis:
     image: redis:7.4-alpine
-    command: [redis-server, --appendonly, 'yes']
+    environment:
+      REDIS_PASSWORD: '${REDIS_PASSWORD:-}'
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
+        fi
+        exec redis-server --appendonly yes
     ports:
       - '127.0.0.1:${REDIS_PORT:-6379}:6379'
     volumes:
       - redisdata:/data
     healthcheck:
-      test: [CMD, redis-cli, PING]
+      test:
+        - CMD-SHELL
+        - 'if [ -n "$$REDIS_PASSWORD" ]; then export REDISCLI_AUTH="$$REDIS_PASSWORD"; fi; redis-cli --raw PING | grep -qx PONG'
       interval: 2s
       timeout: 3s
       retries: 30
       start_period: 5s
 
 volumes:
+  php_vendor:
+    name: '${EXWEBSITE_PHP_VENDOR_VOLUME:-exwebsite-php-vendor-default}'
+  php_runtime:
+    name: '${EXWEBSITE_PHP_RUNTIME_VOLUME:-exwebsite-php-runtime-default}'
   pgdata:
   redisdata:

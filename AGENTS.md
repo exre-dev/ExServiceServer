@@ -5,6 +5,7 @@
 ## 开工前
 
 - 安装、启动与环境准备见 `README.md`。资料与当前实现不一致时，先核实相关代码与配置。
+- 本地独立启动、后台依赖与开发上下文见 `docs/local-development.md`；不要把根全栈入口的保留环境字段写入 `.env`。
 - 修改前查找并复用已有模型、中间件和服务。
 
 ### Testing and contribution rules

@@ -229,7 +229,7 @@ config('plugin.tinywan.jwt.app.jwt.access_exp');  // 插件配置
 getenv('BOT_APPID');                              // .env 变量
 ```
 
-- 敏感值（`DB_*`、`MAIL_*`、`BOT_*`、`PG_*`、`TXADMIN_USER/TXADMIN_PASSWORD`、`Owner_ID` 等）放 `.env`，代码用 `getenv()` 读，不要硬编码。
+- 敏感值（`DB_*`、`MAIL_*`、`BOT_*`、`POSTGRES_*`、`TXADMIN_USER/TXADMIN_PASSWORD`、`Owner_ID` 等）放 `.env`，代码用 `getenv()` 读，不要硬编码。
 - 外部 token 之类要缓存的值存 Redis 并设置过期时间（参考 `QQBot::GetAppAccessToken`）。
 
 ## 代码风格

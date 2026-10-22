@@ -1,6 +1,6 @@
 # EXRE B2B2C 平台（Webman 后端）
 
-本仓库是独立的 PHP/Webman 服务，负责 Website HTTP、管理端、OAuth、PostgreSQL、Redis 和服务端文件。父工程的 ExWebsite React 前端消费本仓库生成的内部 OpenAPI；本仓库的 Composer 命令和运行数据由本仓库独立管理。测试规则见 `TESTING.md`。
+本仓库是独立的 PHP/Webman 服务，负责 Website HTTP、管理端接口、OAuth、PostgreSQL、Redis 和服务端文件。父工程 ExWebsite 维护用户网站和管理端 React 前端，消费本仓库生成的内部 OpenAPI；本仓库的 Composer 命令和运行数据由本仓库独立管理。测试规则见 `TESTING.md`。
 
 ## 目录结构
 
@@ -8,10 +8,11 @@
 app/            webman 后端（PHP；/api 前缀：account / admin / server / open / oauth / docs）
 config/         后端配置          database/  建库脚本(schema.sql + seed.sql)
 docs/           设计与对接文档     sdk/       FiveM 插件端 EXCore Lua SDK
-web/admin-web/ 管理端 UI（React19 + antd，随本仓库开发，dev :5173）
 ```
 
-**本地端口**：PHP API 默认 8787，管理端开发入口 5173，父工程 Website 前端默认 8080。前端端口变化时同步核对 PHP `USER_WEB_URL`；公开示例默认 `http://127.0.0.1:8080`。父工程 `pnpm dev` 只启动前端，不初始化或管理本 PHP 服务与数据库。
+**本地开发**：父工程 `pnpm dev` 启动 Docker PHP 8.4.27、管理端与 Website；`pnpm dev:server` 单独运行同一 Docker 后端流程，默认从 8081 选端口；`pnpm start:server` 用本机 PHP 8.4.27 调用 `windows.php`，普通 `SERVER_PORT` 默认 8787，依赖或端口不可用直接报错，不自动启动后台服务。Docker 开发不要求宿主 PHP 或 Composer，源码自动重载，依赖按 lock 在独立 vendor 卷安装。启动不创建数据库、账号或迁移业务数据。完整步骤见 `docs/local-development.md`，前端命令见父工程 README。
+
+在本仓库根目录安装 Composer 依赖并准备 `.env` 或 `.env.local` 后，`composer start` 直接以前台方式运行 PHP，不检查 Docker；`composer dev` 先只读探测 PostgreSQL 与 Redis，在符合本地 Compose 映射且明确连接拒绝时才启动缺失的服务。PHP 先加载 `.env`，再由 `.env.local` 覆盖同名配置；CLI、worker 与安装配置刷新遵守同一顺序，`composer dev` 也按此顺序为 Compose 指定环境文件。Linux 前台启动需要 Webman 原有的 `pcntl` 与 `posix` 扩展，启动器会在依赖探测前检查。两者都保留现有环境文件、`install.lock` 与容器数据，Ctrl+C 只回收本轮 PHP 应用进程。
 
 ## OpenAPI 接口契约
 
@@ -42,11 +43,11 @@ generate 更新两版入口、模块文件及完整单文件；lint 检查 PHP �
 
 ## 首次部署初始化
 
-1. 安装 Composer 依赖，准备 PHP 8.4.1+（启用 `pdo_pgsql`、`redis`、`gd`、`mbstring`）、PostgreSQL 和 Redis。
+1. 推荐用父工程 Docker 开发入口，镜像提供 PHP 8.4.27 及扩展；本机 Windows 入口需 PHP 8.4.27（启用 `pdo_pgsql`、`redis`、`gd`、`mbstring`）并执行 `composer install --no-scripts`。两种模式均需准备已有业务数据库和账号。
 2. 准备目标 PostgreSQL 数据库及具备该数据库 `public` schema 建表权限的用户。默认需要空数据库；强制模式还需有业务表的删除权限。确保项目目录及 `.env` 可写；`.env` 不存在时会自动创建。
-3. 启动后端（Linux：`php start.php start -d`；Windows：`php windows.php`），构建并部署 `web/admin-web` 管理端。网关将管理端静态资源指向其 `dist/`，SPA 路径回退到 `index.html`，`/api` 转发至后端 8787。
+3. 开发时可用 `composer start` 或 `composer dev` 前台启动后端；既有 Linux `php start.php start -d` 与 Windows `php windows.php` 入口仍可用于原有部署流程。构建并部署管理端时，网关将静态资源指向其 `dist/`，SPA 路径回退到 `index.html`，`/api` 转发至配置的后端端口。
 4. 第一次打开管理端任意页面会自动进入 `/install`，依次检查环境、填写 PostgreSQL / Redis 连接信息、设置超级管理员邮箱及密码。
-5. 提交后自动导入 `database/schema.sql` 的建表部分、创建超级管理员、保存 `.env` 并生成独立 JWT 密钥，不导入 `seed.sql` 的测试账号。完成后进入登录页。
+5. 提交后自动导入 `database/schema.sql` 的建表部分、创建超级管理员、保存环境配置并生成独立 JWT 密钥，不导入 `seed.sql` 的测试账号。存在 `.env.local` 时写入该覆盖文件，否则写入 `.env`。完成后进入登录页。
 
 初始化接口免登录，且在数据库、Redis 未配置时可访问；其他业务接口在初始化前返回 503。默认拒绝覆盖已有 `app_` 业务表。数据库步骤可勾选“强制初始化（清空已有平台数据）”，提交前输入“重置数据库”确认后，将删除所填数据库 `public` 下全部 `app_` 业务表及数据，再重新建表并写入新管理员；其他表保留。删表和导入在同一个事务内完成，失败会回滚并允许修正后重试。存在其他表或视图依赖这些业务表时会拒绝重置并回滚。安装使用文件锁和 PostgreSQL 事务锁防止并发重复提交。
 

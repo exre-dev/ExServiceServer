@@ -63,6 +63,6 @@ description: 本项目（webman/workerman 常驻内存 PHP 后端）的代码规
 
 - 密码一律 bcrypt（`password_hash()` / `password_verify()`），禁止 md5。
 - 签发 JWT 只走 `SessionService::create()`，不要直接调 `JwtToken::generateToken()`（绕过会话记录，token 将无法撤销）。
-- 敏感值（`PG_*`、`MAIL_*`、`BOT_*`、`TXADMIN_*`、`Owner_ID` 等）放 `.env`，不硬编码。
+- 敏感值（`POSTGRES_*`、`MAIL_*`、`BOT_*`、`TXADMIN_*`、`Owner_ID` 等）放 `.env`，不硬编码。
 - QQBot/TxAdmin 是自营私有模块，不暴露给外部空间/开放 API。
 - 历史遗留（`Json(["code"=>0/1])` 旧格式、gatewayworker 包缺失等，见 conventions.md「历史遗留」）不要顺手改，除非用户要求。

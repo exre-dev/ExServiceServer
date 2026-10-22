@@ -51,11 +51,11 @@ namespace {
     $values = [];
     foreach (
       [
-        'PG_HOST',
-        'PG_PORT',
-        'PG_DB',
-        'PG_USER',
-        'PG_PASSWORD',
+        'POSTGRES_HOST',
+        'POSTGRES_PORT',
+        'POSTGRES_DB',
+        'POSTGRES_USER',
+        'POSTGRES_PASSWORD',
         'REDIS_HOST',
         'REDIS_PORT',
         'REDIS_DATABASE',
@@ -71,13 +71,13 @@ namespace {
           ? ''
           : $value;
     }
-    foreach (['PG_HOST', 'REDIS_HOST'] as $key) {
+    foreach (['POSTGRES_HOST', 'REDIS_HOST'] as $key) {
       verify(
         in_array($values[$key], ['127.0.0.1', 'localhost', '::1'], true),
         $key . ' 必须是独立测试服务的回环地址',
       );
     }
-    foreach (['PG_PORT', 'REDIS_PORT'] as $key) {
+    foreach (['POSTGRES_PORT', 'REDIS_PORT'] as $key) {
       verify(
         ctype_digit($values[$key]) &&
           (int) $values[$key] > 0 &&
@@ -86,11 +86,15 @@ namespace {
       );
     }
     verify(
-      (bool) preg_match('/^website_http_test_[a-z0-9_]+$/D', $values['PG_DB']),
+      (bool) preg_match(
+        '/^website_http_test_[a-z0-9_]+$/D',
+        $values['POSTGRES_DB'],
+      ),
       '测试数据库必须使用 website_http_test_ 前缀',
     );
     verify(
-      $values['PG_USER'] !== '' && !str_contains($values['PG_USER'], "\0"),
+      $values['POSTGRES_USER'] !== '' &&
+        !str_contains($values['POSTGRES_USER'], "\0"),
       '测试数据库用户不能为空',
     );
     verify(
@@ -639,14 +643,14 @@ namespace {
     );
 
     $pdo = new PDO(
-      "pgsql:host={$environment['PG_HOST']};port={$environment['PG_PORT']};dbname={$environment['PG_DB']};connect_timeout=3",
-      $environment['PG_USER'],
-      $environment['PG_PASSWORD'],
+      "pgsql:host={$environment['POSTGRES_HOST']};port={$environment['POSTGRES_PORT']};dbname={$environment['POSTGRES_DB']};connect_timeout=3",
+      $environment['POSTGRES_USER'],
+      $environment['POSTGRES_PASSWORD'],
       [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
     );
     verify(
       $pdo->query('SELECT current_database()')->fetchColumn() ===
-        $environment['PG_DB'],
+        $environment['POSTGRES_DB'],
       '连接到了非预期测试数据库',
     );
     $pdo->exec('CREATE SCHEMA "' . $schema . '"');

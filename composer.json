@@ -52,6 +52,14 @@
     }
   },
   "scripts": {
+    "start": [
+      "Composer\\Config::disableProcessTimeout",
+      "@php scripts/runtime.php start"
+    ],
+    "dev": [
+      "Composer\\Config::disableProcessTimeout",
+      "@php scripts/runtime.php dev"
+    ],
     "api:generate": "@php scripts/openapi.php generate",
     "api:lint": "@php scripts/openapi.php lint",
     "api:check": "@php scripts/openapi.php check",

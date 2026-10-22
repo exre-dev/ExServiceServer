@@ -6,13 +6,10 @@
 /node_modules
 *.log
 .env
+.env.local
+.env.docker
 /install.lock
 /.install.mutex
 /.install-*
 /tests/tmp
 /tests/.phpunit.result.cache
-# 管理端 UI（随仓库走）
-/web/admin-web/node_modules
-/web/admin-web/dist
-# 用户侧 UI：独立项目（自带 .git / 独立数据库与端口），父仓库不追踪
-/web/user-web/

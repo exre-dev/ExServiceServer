@@ -147,7 +147,7 @@ use OpenApi\Attributes as OA;
   schema: 'SystemInstallInput',
   type: 'object',
   required: ['database', 'redis', 'admin'],
-  description: '连接信息/管理员字段仅接受字符串或整数且禁止控制字符；除 password 外 trim 后不能为空。写入 .env、生成 JWT 密钥并创建 install.lock；不导入 seed.sql。',
+  description: '连接信息/管理员字段仅接受字符串或整数且禁止控制字符；除 password 外 trim 后不能为空。写入 .env（存在 .env.local 时写入该本地覆盖文件）、生成 JWT 密钥并创建 install.lock；不导入 seed.sql。',
   properties: [
     new OA\Property(
       property: 'database',
