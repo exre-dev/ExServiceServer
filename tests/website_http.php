@@ -571,13 +571,6 @@ namespace {
     }
     putenv('JWT_ACCESS_SECRET=' . bin2hex(random_bytes(32)));
     putenv('JWT_REFRESH_SECRET=' . bin2hex(random_bytes(32)));
-    putenv('USER_WEB_URL');
-    verify(
-      require $source . '/config/userweb.php'['base_url'] ===
-        'http://127.0.0.1:8080',
-      '默认 Website 公开地址应为 8080',
-    );
-    putenv('USER_WEB_URL=http://127.0.0.1:8080');
     putenv('BOT_ENABLE=false');
     copyConfiguration($source . '/config', $root . '/config');
     foreach (
@@ -625,6 +618,13 @@ namespace {
         ";\nreturn \$config;\n",
     );
     require $source . '/vendor/autoload.php';
+    putenv('USER_WEB_URL');
+    $defaultUserWeb = require $source . '/config/userweb.php';
+    verify(
+      $defaultUserWeb['base_url'] === 'http://127.0.0.1:8080',
+      '默认 Website 公开地址应为 8080',
+    );
+    putenv('USER_WEB_URL=http://127.0.0.1:8080');
     require $source . '/support/bootstrap.php';
     InstallationService::refreshConfiguration(true);
     verify(
@@ -1572,6 +1572,121 @@ namespace {
     );
     $http->json('GET', '/oauth/device', [], 401, null, 'public');
     echo "PASS SSO: real device-init setup, inspect/password/session confirm, 401/409/422; device top navigation remains 401\n";
+
+    $oauthClientId = 'userinfo-' . bin2hex(random_bytes(8));
+    $oauthSecret = bin2hex(random_bytes(16));
+    $redirectUri = 'https://oauth.website-http.invalid/callback';
+    Db::table('app_oauth_clients')->insert([
+      'client_id' => $oauthClientId,
+      'name' => 'Userinfo cache fixture',
+      'type' => 'third_party',
+      'client_secret_hash' => hash('sha256', $oauthSecret),
+      'redirect_uris' => json_encode([$redirectUri]),
+      'scopes' => '["user.basic","user.email"]',
+    ]);
+    $http->json('GET', '/api/open/userinfo', [], 401, null, 'public');
+    // 先授予邮箱，再签发 basic token：累计 grant 不能扩大单个会话的权限。
+    foreach (['user.basic user.email', 'user.basic'] as $scope) {
+      $authorization = $http->json(
+        'POST',
+        '/api/oauth/authorize/confirm',
+        [
+          'client_id' => $oauthClientId,
+          'redirect_uri' => $redirectUri,
+          'state' => bin2hex(random_bytes(8)),
+          'scope' => $scope,
+        ],
+        200,
+        $token,
+      );
+      parse_str(parse_url($authorization->redirect, PHP_URL_QUERY), $query);
+      $oauth = $http->json(
+        'POST',
+        '/api/oauth/token',
+        [
+          'grant_type' => 'authorization_code',
+          'client_id' => $oauthClientId,
+          'client_secret' => $oauthSecret,
+          'redirect_uri' => $redirectUri,
+          'code' => $query['code'],
+        ],
+        200,
+        null,
+        'public',
+      );
+      verify($oauth->scope === $scope, 'OAuth 签发 scope 不符');
+      $session = Db::table('app_auth_sessions')
+        ->where('user_id', $users['member'])
+        ->where('client_id', $oauthClientId)
+        ->where('scope', $scope)
+        ->first();
+      verify($session !== null, 'OAuth 会话未持久化');
+      $key = 'sess:' . $session->id;
+      $createdSnapshot = json_decode(
+        Redis::get($key),
+        true,
+        512,
+        JSON_THROW_ON_ERROR,
+      );
+      verify($createdSnapshot['scope'] === $scope, '创建快照缺少 scope');
+      $before = null;
+      foreach (
+        ['cache hit', 'database fallback', 'rebuilt cache hit']
+        as $phase
+      ) {
+        if ($phase === 'database fallback') {
+          verify(
+            Redis::del($key) === 1 && !Redis::exists($key),
+            '测试会话缓存未删除',
+          );
+        }
+        $info = $http->json(
+          'GET',
+          '/api/open/userinfo',
+          [],
+          200,
+          $oauth->access_token,
+          'public',
+        );
+        verify($info->id === $users['member'], $phase . ' 用户不符');
+        $expectedFields = ['id', 'username', 'avatar'];
+        if ($scope === 'user.basic user.email') {
+          $expectedFields[] = 'email';
+          verify(
+            ($info->email ?? null) === $credentials['email'],
+            $phase . ' 丢失已授权邮箱',
+          );
+        }
+        $fields = array_keys(get_object_vars($info));
+        sort($fields);
+        sort($expectedFields);
+        verify($fields === $expectedFields, $phase . ' 泄露未授权字段');
+        verify($before === null || $info == $before, $phase . ' 改变 userinfo');
+        $before = $info;
+        verify(
+          json_decode(Redis::get($key), true, 512, JSON_THROW_ON_ERROR) ===
+            $createdSnapshot,
+          $phase . ' 改变会话快照',
+        );
+        verify(
+          Db::table('app_auth_sessions')
+            ->where('id', $session->id)
+            ->value('scope') === $scope,
+          $phase . ' 改变数据库 scope',
+        );
+      }
+      verify(
+        json_decode(
+          Db::table('app_oauth_grants')
+            ->where('user_id', $users['member'])
+            ->where('client_id', $oauthClientId)
+            ->value('scopes'),
+          true,
+        ) === ['user.basic', 'user.email'],
+        '累计授权应保留邮箱，但不得扩大 basic token 的 scope',
+      );
+    }
+    echo "PASS OAuth userinfo: real authorization-code tokens, scope snapshots and authorized fields survive cache miss/rebuild; ungranted fields stay hidden\n";
 
     $http->json('POST', '/api/auth/logout', [], 200, $token);
     $http->json('GET', '/api/auth/me', [], 401, $token);
